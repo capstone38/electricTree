@@ -8,6 +8,7 @@
 #include "version.h"
 #include "pt_utils.hpp"
 #include "pt_console_display.hpp"
+#include "main.h"
 
 using namespace std;
 
@@ -16,6 +17,7 @@ extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_S
 
 int main(int argc, char** argv)
 {
+    state_e state = STATE_INIT;
 
     pt_utils pt_utils;
     unique_ptr<console_display::pt_console_display> console_view = move(console_display::make_console_pt_display());
@@ -60,6 +62,8 @@ int main(int argc, char** argv)
 
     cout << endl << "-------- Press Esc key to exit --------" << endl << endl;
 
+    state = STATE_IDLE;
+
     while(!pt_utils.user_request_exit())
     {
         rs::core::correlated_sample_set sampleSet = {};
@@ -82,14 +86,14 @@ int main(int argc, char** argv)
         //console_view->facial_tracking(ptModule);
 
         // Track wave movement
-        console_view->waving(ptModule);
+        //console_view->waving(ptModule);
 
         // Track skeleton joints
-        //console_view->on_person_skeleton(ptModule);
+        //while(!pt_utils.user_request_exit()){
+        console_view->on_person_skeleton(ptModule);
 
         // Start tracking the first person detected in the frame
-        //console_view->set_tracking(ptModule);
-
+        console_view->set_tracking(ptModule);
         // Print gesture information
         // Csolor coordinates and world coordinates for both gesture origin and direction.
         //console_view->on_person_pointing_gesture_info_update(ptModule);
