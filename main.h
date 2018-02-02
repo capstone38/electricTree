@@ -18,10 +18,13 @@ enum gestures_e
     GESTURE_FLEX,
     GESTURE_USAIN,
     GESTURE_T,
+    GESTURE_0,
+    GESTURE_SKY,
+    GESTURE_POWERPOSE,
     GESTURE_UNDEFINED
 };
 
-struct gestureJoints
+struct jointCoords_t
 {
     int Lhandx;
     int Lhandy;
@@ -34,6 +37,7 @@ struct gestureJoints
     int Rshouldery;
 };
 
-int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints);
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints);
+void printJointCoords(jointCoords_t jc);
 
 #endif // MAIN_H

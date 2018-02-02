@@ -15,8 +15,6 @@ using namespace std;
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
 
-int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints);
-
 int main(int argc, char** argv)
 {
     state_e state = STATE_INIT;
@@ -92,8 +90,9 @@ int main(int argc, char** argv)
         switch (state)
         {
             case STATE_IDLE:
+                cout << "In idle state" << endl;
                 numTracked = trackingData->QueryNumberOfPeople();
-                cout << numTracked;
+
                 if(numTracked == 1)
                 {
                     // If we are tracking exactly one person, detect their gesture
@@ -140,7 +139,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints)
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints)
 {
 
 
@@ -149,118 +148,116 @@ int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJ
 
     personJoints->QueryJoints(skeletonPoints.data());
 
-    //cout << "Number of Joints detected: " << numDetectedJoints << endl;
-
-         // Temporary Decleration. Might be better to declare as struct
-         int Lhandx;
-         int Lhandy;
-         int Lshoulderx;
-         int Lshouldery;
-
-
-         int Rhandx;
-         int Rhandy;
-         int Rshoulderx;
-         int Rshouldery;
+         jointCoords_t jointCoords;
 
     for(int i = 0; i < numDetectedJoints ; i++) {
+                     // Populate joint coordinates values
+                     jointCoords.Lhandx = skeletonPoints.at(0).image.x;
+                     jointCoords.Lhandy = skeletonPoints.at(0).image.y;
+                     jointCoords.Rhandx = skeletonPoints.at(1).image.x;
+                     jointCoords.Rhandy = skeletonPoints.at(1).image.y;
 
-                     Lhandx = skeletonPoints.at(0).image.x;
-                     Lhandy = skeletonPoints.at(0).image.y;
-                     Rhandx = skeletonPoints.at(1).image.x;
-                     Rhandy = skeletonPoints.at(1).image.y;
-
-                     Lshoulderx = skeletonPoints.at(4).image.x;
-                     Lshouldery = skeletonPoints.at(4).image.y;
-                     Rshoulderx = skeletonPoints.at(5).image.x;
-                     Rshouldery = skeletonPoints.at(5).image.y;
-
-
+                     jointCoords.Lshoulderx = skeletonPoints.at(4).image.x;
+                     jointCoords.Lshouldery = skeletonPoints.at(4).image.y;
+                     jointCoords.Rshoulderx = skeletonPoints.at(5).image.x;
+                     jointCoords.Rshouldery = skeletonPoints.at(5).image.y;
 
 
-                 // 6: LH, 7: RH, 10: H, 19: S, 16: LS, 17: RS
-                 cout << "LH: " << skeletonPoints.at(0).image.x << ", " << skeletonPoints.at(0).image.y
-                      << "|RH: " << skeletonPoints.at(1).image.x << ", " << skeletonPoints.at(1).image.y
-                      << "|LS: " << skeletonPoints.at(4).image.x << ", " << skeletonPoints.at(4).image.y
-                      << "|RS: " << skeletonPoints.at(5).image.x << ", " << skeletonPoints.at(5).image.y
-                      //<< "|H: " << skeletonPoints.at(2).image.x << ", " << skeletonPoints.at(2).image.y
-                      //<< "|S: " << skeletonPoints.at(3).image.x << ", " << skeletonPoints.at(3).image.y
-                      << endl;
+                     //printJointCoords(jointCoords);
 
+                 // check for each pose sequentially.
+                 // some way to make this cleaner, perhaps a helper function with just jointCoords struct as only parameter?
 
                  //Power pose
-                 if( ((Lshoulderx - Lhandx) <= 40) &&
-                     ((Lshoulderx - Lhandx) > 0 ) &&
-                     ((Lshouldery - Lhandy) <= 40) &&
-                     ((Lshouldery - Lhandy) > 0) &&
-                     ((Rshoulderx - Rhandx) <= 0) &&
-                     ((Rshoulderx - Rhandx) > -40 ) &&
-                     ((Rshouldery - Rhandy) <= 40) &&
-                     ((Rshouldery - Rhandy) > 0)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 40) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) > 0 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 40) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) > 0) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 0) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) > -40 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 40) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) > 0)
                    )
                  {
                          cout << "Power Pose Detected!" << endl << endl;
                          //system("firefox goo.gl/xZPVb9");
+                         return GESTURE_POWERPOSE;
                  }
 
-                 if( ((Lshoulderx - Lhandx) <= 30) &&
-                     ((Lshoulderx - Lhandx) >= 10 ) &&
-                     ((Lshouldery - Lhandy) <= 120) &&
-                     ((Lshouldery - Lhandy) >= 100) &&
-                     ((Rshoulderx - Rhandx) <= 0) &&
-                     ((Rshoulderx - Rhandx) >= -20 ) &&
-                     ((Rshouldery - Rhandy) <= 120) &&
-                     ((Rshouldery - Rhandy) >= 100)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 30) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 10 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 120) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 100) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 0) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -20 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 120) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= 100)
                    )
                  {
                         cout << "Touch the Sky Pose Detected!" << endl << endl;
                         //system("firefox goo.gl/xipLSq");
+                        return GESTURE_SKY;
                  }
 
                  //Usain Bolt Pose (to the left)
-                 if( ((Lshoulderx - Lhandx) <= 20) &&
-                     ((Lshoulderx - Lhandx) >= -20 ) &&
-                     ((Lshouldery - Lhandy) <= -20) &&
-                     ((Lshouldery - Lhandy) >= -60) &&
-                     ((Rshoulderx - Rhandx) <= -50) &&
-                     ((Rshoulderx - Rhandx) >= -100 ) &&
-                     ((Rshouldery - Rhandy) <= 50) &&
-                     ((Rshouldery - Rhandy) >= -10)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 20) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -20 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -20) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -60) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -50) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -100 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 50) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -10)
                    )
                  {
                         cout << "Usain Bolt Pose Detected!" << endl << endl;
                         //system("firefox goo.gl/xipLSq");
+                        return GESTURE_USAIN;
                  }
 
-                 if( ((Lshoulderx - Lhandx) <= 90) &&
-                     ((Lshoulderx - Lhandx) >= 70 ) &&
-                     ((Lshouldery - Lhandy) <= -20) &&
-                     ((Lshouldery - Lhandy) >= -30) &&
-                     ((Rshoulderx - Rhandx) <= -90) &&
-                     ((Rshoulderx - Rhandx) >= -110 ) &&
-                     ((Rshouldery - Rhandy) <= 0) &&
-                     ((Rshouldery - Rhandy) >= -20)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 90) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 70 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -20) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -30) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -90) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -110 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 0) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -20)
                    )
                  {
                         cout << "T Pose Detected!" << endl << endl;
                         //system("firefox goo.gl/xipLSq");
+                        return GESTURE_T;
                  }
 
-                 if( ((Lshoulderx - Lhandx) <= 5) &&
-                     ((Lshoulderx - Lhandx) >= -35 ) &&
-                     ((Lshouldery - Lhandy) <= 25) &&
-                     ((Lshouldery - Lhandy) >= 5) &&
-                     ((Rshoulderx - Rhandx) <= 5) &&
-                     ((Rshoulderx - Rhandx) >= -15 ) &&
-                     ((Rshouldery - Rhandy) <= 5) &&
-                     ((Rshouldery - Rhandy) >= -15)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 5) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -35 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 25) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 5) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 5) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -15 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
                    )
                  {
                         cout << "O Pose Detected!" << endl << endl;
                         //system("firefox goo.gl/xipLSq");
+                        return GESTURE_0;
                  }
 
     }
 
-    return 0;
+    return GESTURE_UNDEFINED;
+}
+
+void printJointCoords(jointCoords_t jc)
+{
+    // 6: LH, 7: RH, 10: H, 19: S, 16: LS, 17: RS
+    cout << "LH: " << jc.Lhandx << ", " << jc.Lhandy
+         << "|RH: " << jc.Rhandx << ", " << jc.Rhandy
+         << "|LS: " << jc.Lshoulderx << ", " << jc.Lshouldery
+         << "|RS: " << jc.Rshoulderx << ", " << jc.Rshouldery
+         //<< "|H: " << skeletonPoints.at(2).image.x << ", " << skeletonPoints.at(2).image.y
+         //<< "|S: " << skeletonPoints.at(3).image.x << ", " << skeletonPoints.at(3).image.y
+         << endl;
 }
