@@ -15,6 +15,8 @@ using namespace std;
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
 
+int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints);
+
 int main(int argc, char** argv)
 {
     state_e state = STATE_INIT;
@@ -38,17 +40,8 @@ int main(int argc, char** argv)
     ptModule->QueryConfiguration()->QueryGestures()->Enable();
     ptModule->QueryConfiguration()->QueryGestures()->EnableAllGestures();
     ptModule->QueryConfiguration()->QueryTracking()->Enable();
-
-
     ptModule->QueryConfiguration()->QuerySkeletonJoints()->Enable();
 
-//    auto config = ptModule->QueryConfiguration()->QueryGestures();
-//    config->Enable();
-//    config->EnableGesture(PersonGestures::Pointing);
-//    config->EnableGesture(PersonGestures::GestureType::Wave);
-
-//    ptModule->QueryConfiguration()->QueryFace()->EnableFaceLandmarks();
-//    ptModule->QueryConfiguration()->QueryFace()->EnableHeadPose();
 
     // Configure enabled Pointing Gesture
     if(ptModule->set_module_config(actualModuleConfig) != rs::core::status_no_error)
@@ -63,7 +56,10 @@ int main(int argc, char** argv)
     cout << endl << "-------- Press Esc key to exit --------" << endl << endl;
 
     state = STATE_IDLE;
+    Intel::RealSense::PersonTracking::PersonTrackingData *trackingData = ptModule->QueryOutput();
+    Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints = nullptr;
 
+    // Start main loop
     while(!pt_utils.user_request_exit())
     {
         rs::core::correlated_sample_set sampleSet = {};
@@ -82,21 +78,6 @@ int main(int argc, char** argv)
             continue;
         }
 
-        // Track facial movement
-        //console_view->facial_tracking(ptModule);
-
-        // Track wave movement
-        //console_view->waving(ptModule);
-
-        // Track skeleton joints
-        //while(!pt_utils.user_request_exit()){
-        console_view->on_person_skeleton(ptModule);
-
-        // Start tracking the first person detected in the frame
-        console_view->set_tracking(ptModule);
-        // Print gesture information
-        // Csolor coordinates and world coordinates for both gesture origin and direction.
-        //console_view->on_person_pointing_gesture_info_update(ptModule);
 
         // Display color image
         auto colorImage = sampleSet[rs::core::stream_type::color];
@@ -106,10 +87,180 @@ int main(int argc, char** argv)
         sampleSet.images[static_cast<uint8_t>(rs::core::stream_type::color)]->release();
         sampleSet.images[static_cast<uint8_t>(rs::core::stream_type::depth)]->release();
 
+        // Main program FSM implementation
+        int numTracked;
+        switch (state)
+        {
+            case STATE_IDLE:
+                numTracked = trackingData->QueryNumberOfPeople();
+                cout << numTracked;
+                if(numTracked == 1)
+                {
+                    // If we are tracking exactly one person, detect their gesture
+                    console_view->set_tracking(ptModule);
+                    state = STATE_READY;
+                }
+
+            break;
+
+            case STATE_READY:
+            // Track skeleton joints
+            if(trackingData->QueryNumberOfPeople() == 0)
+            {
+                // If we no longer see a person, back to idle state
+                state = STATE_IDLE;
+            }
+            else
+            {
+                // Start tracking the first person detected in the frame
+                console_view->on_person_skeleton(ptModule);
+                personJoints = console_view->on_person_skeleton(ptModule);
+                detectGestures(personJoints);
+            }
+
+            break;
+
+        case STATE_PLAYBACK:
+            // @TODO Issue system call to playback video content over HDMI
+            // system(...);
+
+            // @TODO
+            // If we are still detecting a person, listen for cancel gesture
+            break;
+
+
+
+        }
+
     }
 
     pt_utils.stop_camera();
     actualModuleConfig.projection->release();
     cout << "-------- Stopping --------" << endl;
+    return 0;
+}
+
+int detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints)
+{
+
+
+    int numDetectedJoints = personJoints->QueryNumJoints();
+    std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
+
+    personJoints->QueryJoints(skeletonPoints.data());
+
+    //cout << "Number of Joints detected: " << numDetectedJoints << endl;
+
+         // Temporary Decleration. Might be better to declare as struct
+         int Lhandx;
+         int Lhandy;
+         int Lshoulderx;
+         int Lshouldery;
+
+
+         int Rhandx;
+         int Rhandy;
+         int Rshoulderx;
+         int Rshouldery;
+
+    for(int i = 0; i < numDetectedJoints ; i++) {
+
+                     Lhandx = skeletonPoints.at(0).image.x;
+                     Lhandy = skeletonPoints.at(0).image.y;
+                     Rhandx = skeletonPoints.at(1).image.x;
+                     Rhandy = skeletonPoints.at(1).image.y;
+
+                     Lshoulderx = skeletonPoints.at(4).image.x;
+                     Lshouldery = skeletonPoints.at(4).image.y;
+                     Rshoulderx = skeletonPoints.at(5).image.x;
+                     Rshouldery = skeletonPoints.at(5).image.y;
+
+
+
+
+                 // 6: LH, 7: RH, 10: H, 19: S, 16: LS, 17: RS
+                 cout << "LH: " << skeletonPoints.at(0).image.x << ", " << skeletonPoints.at(0).image.y
+                      << "|RH: " << skeletonPoints.at(1).image.x << ", " << skeletonPoints.at(1).image.y
+                      << "|LS: " << skeletonPoints.at(4).image.x << ", " << skeletonPoints.at(4).image.y
+                      << "|RS: " << skeletonPoints.at(5).image.x << ", " << skeletonPoints.at(5).image.y
+                      //<< "|H: " << skeletonPoints.at(2).image.x << ", " << skeletonPoints.at(2).image.y
+                      //<< "|S: " << skeletonPoints.at(3).image.x << ", " << skeletonPoints.at(3).image.y
+                      << endl;
+
+
+                 //Power pose
+                 if( ((Lshoulderx - Lhandx) <= 40) &&
+                     ((Lshoulderx - Lhandx) > 0 ) &&
+                     ((Lshouldery - Lhandy) <= 40) &&
+                     ((Lshouldery - Lhandy) > 0) &&
+                     ((Rshoulderx - Rhandx) <= 0) &&
+                     ((Rshoulderx - Rhandx) > -40 ) &&
+                     ((Rshouldery - Rhandy) <= 40) &&
+                     ((Rshouldery - Rhandy) > 0)
+                   )
+                 {
+                         cout << "Power Pose Detected!" << endl << endl;
+                         //system("firefox goo.gl/xZPVb9");
+                 }
+
+                 if( ((Lshoulderx - Lhandx) <= 30) &&
+                     ((Lshoulderx - Lhandx) >= 10 ) &&
+                     ((Lshouldery - Lhandy) <= 120) &&
+                     ((Lshouldery - Lhandy) >= 100) &&
+                     ((Rshoulderx - Rhandx) <= 0) &&
+                     ((Rshoulderx - Rhandx) >= -20 ) &&
+                     ((Rshouldery - Rhandy) <= 120) &&
+                     ((Rshouldery - Rhandy) >= 100)
+                   )
+                 {
+                        cout << "Touch the Sky Pose Detected!" << endl << endl;
+                        //system("firefox goo.gl/xipLSq");
+                 }
+
+                 //Usain Bolt Pose (to the left)
+                 if( ((Lshoulderx - Lhandx) <= 20) &&
+                     ((Lshoulderx - Lhandx) >= -20 ) &&
+                     ((Lshouldery - Lhandy) <= -20) &&
+                     ((Lshouldery - Lhandy) >= -60) &&
+                     ((Rshoulderx - Rhandx) <= -50) &&
+                     ((Rshoulderx - Rhandx) >= -100 ) &&
+                     ((Rshouldery - Rhandy) <= 50) &&
+                     ((Rshouldery - Rhandy) >= -10)
+                   )
+                 {
+                        cout << "Usain Bolt Pose Detected!" << endl << endl;
+                        //system("firefox goo.gl/xipLSq");
+                 }
+
+                 if( ((Lshoulderx - Lhandx) <= 90) &&
+                     ((Lshoulderx - Lhandx) >= 70 ) &&
+                     ((Lshouldery - Lhandy) <= -20) &&
+                     ((Lshouldery - Lhandy) >= -30) &&
+                     ((Rshoulderx - Rhandx) <= -90) &&
+                     ((Rshoulderx - Rhandx) >= -110 ) &&
+                     ((Rshouldery - Rhandy) <= 0) &&
+                     ((Rshouldery - Rhandy) >= -20)
+                   )
+                 {
+                        cout << "T Pose Detected!" << endl << endl;
+                        //system("firefox goo.gl/xipLSq");
+                 }
+
+                 if( ((Lshoulderx - Lhandx) <= 5) &&
+                     ((Lshoulderx - Lhandx) >= -35 ) &&
+                     ((Lshouldery - Lhandy) <= 25) &&
+                     ((Lshouldery - Lhandy) >= 5) &&
+                     ((Rshoulderx - Rhandx) <= 5) &&
+                     ((Rshoulderx - Rhandx) >= -15 ) &&
+                     ((Rshouldery - Rhandy) <= 5) &&
+                     ((Rshouldery - Rhandy) >= -15)
+                   )
+                 {
+                        cout << "O Pose Detected!" << endl << endl;
+                        //system("firefox goo.gl/xipLSq");
+                 }
+
+    }
+
     return 0;
 }
