@@ -2,6 +2,7 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #include <iostream>
 #include <signal.h>
+#include <thread>
 
 #include <librealsense/rs.hpp>
 #include "rs_sdk.h"
@@ -17,8 +18,6 @@ extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_S
 
 int main(int argc, char** argv)
 {
-    state_e state = STATE_INIT;
-
     pt_utils pt_utils;
     unique_ptr<console_display::pt_console_display> console_view = move(console_display::make_console_pt_display());
 
@@ -52,10 +51,13 @@ int main(int argc, char** argv)
     pt_utils.start_camera();
 
     cout << endl << "-------- Press Esc key to exit --------" << endl << endl;
-
-    state = STATE_IDLE;
     Intel::RealSense::PersonTracking::PersonTrackingData *trackingData = ptModule->QueryOutput();
     Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints = nullptr;
+
+    state_e state = STATE_IDLE;
+    int numTracked;
+    gestures_e gestureDetected = GESTURE_UNDEFINED;
+    bool playbackFinished = false;
 
     // Start main loop
     while(!pt_utils.user_request_exit())
@@ -86,14 +88,15 @@ int main(int argc, char** argv)
         sampleSet.images[static_cast<uint8_t>(rs::core::stream_type::depth)]->release();
 
         // Main program FSM implementation
-        int numTracked;
+
+
         switch (state)
         {
             case STATE_IDLE:
                 cout << "In idle state" << endl;
                 numTracked = trackingData->QueryNumberOfPeople();
 
-                if(numTracked == 1)
+                if(numTracked == 1) // numTracker >= 1?
                 {
                     // If we are tracking exactly one person, detect their gesture
                     console_view->set_tracking(ptModule);
@@ -102,7 +105,7 @@ int main(int argc, char** argv)
 
             break;
 
-            case STATE_READY:
+        case STATE_READY:
             // Track skeleton joints
             if(trackingData->QueryNumberOfPeople() == 0)
             {
@@ -114,21 +117,49 @@ int main(int argc, char** argv)
                 // Start tracking the first person detected in the frame
                 console_view->on_person_skeleton(ptModule);
                 personJoints = console_view->on_person_skeleton(ptModule);
-                detectGestures(personJoints);
+                gestureDetected = detectGestures(personJoints);
+
+                if(gestureDetected != GESTURE_UNDEFINED)
+                {
+                    state = STATE_PLAYBACK_START;
+                }
             }
 
             break;
 
-        case STATE_PLAYBACK:
-            // @TODO Issue system call to playback video content over HDMI
-            // system(...);
+        case STATE_PLAYBACK_START:
+            // Issue system call to playback video content in a detached thread
+            playbackFinished = false;
+            {
+                thread video(playContent, gestureDetected, ref(playbackFinished));
+                video.detach();
+            }
 
-            // @TODO
-            // If we are still detecting a person, listen for cancel gesture
+            state = STATE_PLAYBACK_UNDERWAY;
             break;
 
+        case STATE_PLAYBACK_UNDERWAY:
+            // If we are still detecting a person, listen for cancel gesture
+            numTracked = trackingData->QueryNumberOfPeople();
 
+            if(numTracked == 1)
+            {
+                personJoints = console_view->on_person_skeleton(ptModule);
+                gestureDetected = detectGestures(personJoints);
 
+                // @TODO Implement cancel gesture. Currently playback will cancel as soon as a person is tracked.
+                //if(gestureDetected == GESTURE_CANCEL)
+                {
+                   system("killall vlc");
+                }
+            }
+
+            if(playbackFinished)
+            {
+                cout << "playback completed or killed!" << endl;
+                state = STATE_IDLE;
+            }
+            break;
         }
 
     }
@@ -148,7 +179,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     personJoints->QueryJoints(skeletonPoints.data());
 
-         jointCoords_t jointCoords;
+    jointCoords_t jointCoords;
 
     for(int i = 0; i < numDetectedJoints ; i++) {
                      // Populate joint coordinates values
@@ -162,8 +193,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                      jointCoords.Rshoulderx = skeletonPoints.at(5).image.x;
                      jointCoords.Rshouldery = skeletonPoints.at(5).image.y;
 
-
-                     //printJointCoords(jointCoords);
 
                  // check for each pose sequentially.
                  // some way to make this cleaner, perhaps a helper function with just jointCoords struct as only parameter?
@@ -180,7 +209,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                          cout << "Power Pose Detected!" << endl << endl;
-                         //system("firefox goo.gl/xZPVb9");
                          return GESTURE_POWERPOSE;
                  }
 
@@ -195,7 +223,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                         cout << "Touch the Sky Pose Detected!" << endl << endl;
-                        //system("firefox goo.gl/xipLSq");
                         return GESTURE_SKY;
                  }
 
@@ -211,7 +238,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                         cout << "Usain Bolt Pose Detected!" << endl << endl;
-                        //system("firefox goo.gl/xipLSq");
                         return GESTURE_USAIN;
                  }
 
@@ -226,7 +252,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                         cout << "T Pose Detected!" << endl << endl;
-                        //system("firefox goo.gl/xipLSq");
                         return GESTURE_T;
                  }
 
@@ -241,11 +266,12 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                         cout << "O Pose Detected!" << endl << endl;
-                        //system("firefox goo.gl/xipLSq");
                         return GESTURE_0;
                  }
 
     }
+
+    printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
@@ -260,4 +286,18 @@ void printJointCoords(jointCoords_t jc)
          //<< "|H: " << skeletonPoints.at(2).image.x << ", " << skeletonPoints.at(2).image.y
          //<< "|S: " << skeletonPoints.at(3).image.x << ", " << skeletonPoints.at(3).image.y
          << endl;
+}
+
+void playContent(gestures_e gesture, bool &finished)
+{
+    // Play the specified video in fullscreen mode and close vlc when finished
+    // (We should use this in our production code)
+    //system("cvlc -f --play-and-exit file:///home/zac/electricTree/videos/test.mov");
+
+    // Play the specified video on a loop (useful for testing cancel gesture)
+    system("cvlc -R file:///home/zac/electricTree/videos/test.mov");
+
+    // Set finished to true. This is a reference so its value will be seen in the main loop.
+    finished = true;
+    cout << "playback completed! " << endl;
 }
