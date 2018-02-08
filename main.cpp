@@ -1,17 +1,28 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+
+// C++ std libraries
 #include <iostream>
 #include <signal.h>
 #include <thread>
 
+// Boost Libraries
+#include <boost/interprocess/ipc/message_queue.hpp>
+
+// Realsense libraries
 #include <librealsense/rs.hpp>
 #include "rs_sdk.h"
 #include "version.h"
 #include "pt_utils.hpp"
 #include "pt_console_display.hpp"
+
+
 #include "main.h"
 
+
+
 using namespace std;
+using namespace boost::interprocess;
 
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
@@ -54,6 +65,16 @@ int main(int argc, char** argv)
     Intel::RealSense::PersonTracking::PersonTrackingData *trackingData = ptModule->QueryOutput();
     Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints = nullptr;
 
+    // Init interprocess message queue
+    message_queue::remove("etree_message_queue");
+    message_queue mq
+            (create_only,
+             "etree_message_queue",
+             1,
+             sizeof(bool));
+    unsigned int priority;
+    message_queue::size_type recvd_size;
+
     state_e state = STATE_IDLE;
     int numTracked;
     gestures_e gestureDetected = GESTURE_UNDEFINED;
@@ -62,6 +83,11 @@ int main(int argc, char** argv)
     // Start main loop
     while(!pt_utils.user_request_exit())
     {
+        // Check for cancel request from system
+        bool shouldQuit = false;
+        mq.try_receive(&shouldQuit, sizeof(shouldQuit), recvd_size, priority);
+        if(shouldQuit) break;
+
         rs::core::correlated_sample_set sampleSet = {};
 
         // Get next frame
@@ -87,39 +113,55 @@ int main(int argc, char** argv)
         sampleSet.images[static_cast<uint8_t>(rs::core::stream_type::color)]->release();
         sampleSet.images[static_cast<uint8_t>(rs::core::stream_type::depth)]->release();
 
+
         // Main program FSM implementation
-
-
         switch (state)
         {
             case STATE_IDLE:
-                cout << "In idle state" << endl;
                 numTracked = trackingData->QueryNumberOfPeople();
+               //cout << "In idle state. " << numTracked << " people detected." << endl;
 
-                if(numTracked == 1) // numTracker >= 1?
+                if(numTracked == 1) // numTracked >= 1?
                 {
                     // If we are tracking exactly one person, detect their gesture
-                    console_view->set_tracking(ptModule);
-                    state = STATE_READY;
+                    cout << "found someone!" << endl;
+                    int personId = trackingData->QueryPersonData(
+                                Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, 0)->QueryTracking()->QueryId();
+                    cout << "ID before clearing database: " << personId << endl;
+
+                    auto config = ptModule->QueryConfiguration()->QueryRecognition();
+                    auto database = config->QueryDatabase();
+                    database->Clear();
+
+                    personId = trackingData->QueryPersonData(
+                                                    Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, 0)->QueryTracking()->QueryId();
+                                        cout << "ID after clearing database: " << personId << endl;
+
+                    if(personId == 0)
+                    {
+                        console_view->set_tracking(ptModule);
+                        state = STATE_READY;
+                    }
                 }
 
             break;
 
         case STATE_READY:
             // Track skeleton joints
-            if(trackingData->QueryNumberOfPeople() == 0)
+            if(trackingData->QueryNumberOfPeople() != 1)
             {
                 // If we no longer see a person, back to idle state
                 state = STATE_IDLE;
+                //trackingData->StopTracking(0);
+
             }
             else
             {
                 // Start tracking the first person detected in the frame
-                console_view->on_person_skeleton(ptModule);
                 personJoints = console_view->on_person_skeleton(ptModule);
                 gestureDetected = detectGestures(personJoints);
 
-                if(gestureDetected != GESTURE_UNDEFINED)
+                if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
                     state = STATE_PLAYBACK_START;
                 }
@@ -148,7 +190,7 @@ int main(int argc, char** argv)
                 gestureDetected = detectGestures(personJoints);
 
                 // @TODO Implement cancel gesture. Currently playback will cancel as soon as a person is tracked.
-                //if(gestureDetected == GESTURE_CANCEL)
+                if(gestureDetected == GESTURE_CANCEL)
                 {
                    system("killall vlc");
                 }
@@ -157,11 +199,10 @@ int main(int argc, char** argv)
             if(playbackFinished)
             {
                 cout << "playback completed or killed!" << endl;
-                state = STATE_IDLE;
+                state = STATE_READY;
             }
             break;
         }
-
     }
 
     pt_utils.stop_camera();
@@ -180,6 +221,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     personJoints->QueryJoints(skeletonPoints.data());
 
     jointCoords_t jointCoords;
+
+    //cout << "num detected joints" << numDetectedJoints << endl;
+
+    //cout << skeletonPoints.at(0).image.x << endl;
 
     for(int i = 0; i < numDetectedJoints ; i++) {
                      // Populate joint coordinates values
@@ -212,57 +257,58 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                          return GESTURE_POWERPOSE;
                  }
 
-                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 30) &&
-                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 10 ) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 120) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 100) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 0) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -20 ) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 120) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= 100)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 70) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 35 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 90) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 50) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -20) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -60 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 80) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= 50)
                    )
                  {
-                        cout << "Touch the Sky Pose Detected!" << endl << endl;
+                        cout << "Victory Pose Detected!" << endl << endl;
                         return GESTURE_SKY;
                  }
 
                  //Usain Bolt Pose (to the left)
-                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 20) &&
-                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -20 ) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -20) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -60) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -50) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -100 ) &&
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 45) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 20 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -10) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -45) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -30) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -90 ) &&
                      ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 50) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -10)
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= 15)
                    )
                  {
                         cout << "Usain Bolt Pose Detected!" << endl << endl;
                         return GESTURE_USAIN;
                  }
 
-                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 90) &&
-                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 70 ) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -20) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -30) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -90) &&
+                 // T Pose Gesture
+                 if( //((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 100) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 75 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 10) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -10) &&
+                     //((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -80) &&
                      ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -110 ) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 0) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -20)
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
                    )
                  {
                         cout << "T Pose Detected!" << endl << endl;
                         return GESTURE_T;
                  }
 
-                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 5) &&
-                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -35 ) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 25) &&
-                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 5) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 5) &&
-                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -15 ) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
-                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
+                 if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 15) &&
+                     ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -10 ) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 65) &&
+                     ((jointCoords.Lshouldery - jointCoords.Lhandy) >= 55) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) <= 15) &&
+                     ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -5 ) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 70) &&
+                     ((jointCoords.Rshouldery - jointCoords.Rhandy) >= 55)
                    )
                  {
                         cout << "O Pose Detected!" << endl << endl;
@@ -271,12 +317,12 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     }
 
-    printJointCoords(jointCoords);
+    //printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
 
-void printJointCoords(jointCoords_t jc)
+void printJointCoords(jointCoords_t& jc)
 {
     // 6: LH, 7: RH, 10: H, 19: S, 16: LS, 17: RS
     cout << "LH: " << jc.Lhandx << ", " << jc.Lhandy

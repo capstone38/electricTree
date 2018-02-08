@@ -17,6 +17,7 @@ set(PROJECT_LINK_LIBS
     realsense
     pthread
     realsense_persontracking
+    rt
     ${OPENCV_LIBRARIES}
 )
 
@@ -32,6 +33,7 @@ include_directories(
     /usr/include/librealsense/pt
     /usr/include/librealsense/object_recognition
     /usr/include/librealsense/slam
+    /usr/include/boost/interprocess
     ${CONSOLE_DISPLAY_DIR}
     ${COMMON_UTILS_DIR}
 )

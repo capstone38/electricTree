@@ -24,9 +24,10 @@ enum gestures_e
     GESTURE_0,
     GESTURE_SKY,
     GESTURE_POWERPOSE,
-    GESTURE_CANCEL,
     GESTURE_UNDEFINED
 };
+
+#define GESTURE_CANCEL GESTURE_T // update this later if we want a different cancel gesture!!
 
 struct jointCoords_t
 {
@@ -42,7 +43,7 @@ struct jointCoords_t
 };
 
 gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints);
-void printJointCoords(jointCoords_t jc);
+void printJointCoords(jointCoords_t &jc);
 void playContent(gestures_e gesture, bool &finished);
 
 #endif // MAIN_H
