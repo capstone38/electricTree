@@ -27,6 +27,12 @@ using namespace boost::interprocess;
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
 
+//Test
+std::vector<jointCoords_t> arr(30);
+std::vector<jointCoords_t>::iterator it;
+bool detected = false;
+
+
 int main(int argc, char** argv)
 {
     pt_utils pt_utils;
@@ -79,6 +85,8 @@ int main(int argc, char** argv)
     int numTracked;
     gestures_e gestureDetected = GESTURE_UNDEFINED;
     bool playbackFinished = false;
+    gesture_states_t gesture_states;
+    resetGestureStates(gesture_states);
 
     // Start main loop
     while(!pt_utils.user_request_exit())
@@ -141,6 +149,7 @@ int main(int argc, char** argv)
                     {
                         console_view->set_tracking(ptModule);
                         state = STATE_READY;
+                        gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_1;
                     }
                 }
 
@@ -159,7 +168,7 @@ int main(int argc, char** argv)
             {
                 // Start tracking the first person detected in the frame
                 personJoints = console_view->on_person_skeleton(ptModule);
-                gestureDetected = detectGestures(personJoints);
+                gestureDetected = detectGestures(personJoints, gesture_states);
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
@@ -187,7 +196,7 @@ int main(int argc, char** argv)
             if(numTracked == 1)
             {
                 personJoints = console_view->on_person_skeleton(ptModule);
-                gestureDetected = detectGestures(personJoints);
+                gestureDetected = detectGestures(personJoints, gesture_states);
 
                 // @TODO Implement cancel gesture. Currently playback will cancel as soon as a person is tracked.
                 if(gestureDetected == GESTURE_CANCEL)
@@ -211,10 +220,8 @@ int main(int argc, char** argv)
     return 0;
 }
 
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints)
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states)
 {
-
-
     int numDetectedJoints = personJoints->QueryNumJoints();
     std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
 
@@ -226,7 +233,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     //cout << skeletonPoints.at(0).image.x << endl;
 
-    for(int i = 0; i < numDetectedJoints ; i++) {
+
                      // Populate joint coordinates values
                      jointCoords.Lhandx = skeletonPoints.at(0).image.x;
                      jointCoords.Lhandy = skeletonPoints.at(0).image.y;
@@ -238,11 +245,16 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                      jointCoords.Rshoulderx = skeletonPoints.at(5).image.x;
                      jointCoords.Rshouldery = skeletonPoints.at(5).image.y;
 
+                     jointCoords.headx = skeletonPoints.at(2).image.x;
+                     jointCoords.heady = skeletonPoints.at(2).image.y;
+                     jointCoords.Spinex = skeletonPoints.at(3).image.x;
+                     jointCoords.Spiney = skeletonPoints.at(3).image.y;
+
 
                  // check for each pose sequentially.
                  // some way to make this cleaner, perhaps a helper function with just jointCoords struct as only parameter?
-
-                 //Power pose
+/*
+                 // Power pose
                  if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 40) &&
                      ((jointCoords.Lshoulderx - jointCoords.Lhandx) > 0 ) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 40) &&
@@ -257,6 +269,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                          return GESTURE_POWERPOSE;
                  }
 
+                 // Victory Pose
                  if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 70) &&
                      ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 35 ) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 90) &&
@@ -268,10 +281,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                    )
                  {
                         cout << "Victory Pose Detected!" << endl << endl;
-                        return GESTURE_SKY;
+                        return GESTURE_VICTORY;
                  }
 
-                 //Usain Bolt Pose (to the left)
+                 // Usain Bolt Pose (to the left)
                  if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 45) &&
                      ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 20 ) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) <= -10) &&
@@ -285,9 +298,57 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                         cout << "Usain Bolt Pose Detected!" << endl << endl;
                         return GESTURE_USAIN;
                  }
-
+*/
                  // T Pose Gesture
-                 if( //((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 100) &&
+                 switch(gesture_states.tpose_gesture_state)
+                 {
+                    case gesture_states.TPOSE_INIT:
+                         if( //((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 100) &&
+                             ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 75 ) &&
+                             ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 10) &&
+                             ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -10) &&
+                             //((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -80) &&
+                             ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -110 ) &&
+                             ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
+                             ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
+                           )
+                         {
+                                gesture_states.tpose_gesture_state = gesture_states.TPOSE_DETECTING;
+                                gesture_states.cyclesInState_tpose_detecting = 0;
+                         }
+                         break;
+                     case gesture_states.TPOSE_DETECTING:
+                        if( //((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 100) &&
+                         ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 75 ) &&
+                         ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 10) &&
+                         ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -10) &&
+                         //((jointCoords.Rshoulderx - jointCoords.Rhandx) <= -80) &&
+                         ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -110 ) &&
+                         ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
+                         ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
+                       )
+                        {
+                            gesture_states.cyclesInState_tpose_detecting++;
+                            //cout << "Detecting T-pose, " << gesture_states.cyclesInState_tpose_detecting << "cycles" << endl;
+
+                            if(gesture_states.cyclesInState_tpose_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+                            {
+                                cout << "T Pose Detected!" << endl << endl;
+                                resetGestureStates(gesture_states);
+                                return GESTURE_T;
+                            }
+                        }
+                        else
+                        {
+                            gesture_states.tpose_gesture_state = gesture_states.TPOSE_LOST;
+                            gesture_states.cyclesInState_tpose_lost = 0;
+                        }
+                        break;
+
+                 case gesture_states.TPOSE_LOST:
+                     //cout << "Lost T-pose! " << gesture_states.cyclesInState_tpose_lost << "cycles" << endl;
+
+                    if( //((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 100) &&
                      ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= 75 ) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 10) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) >= -10) &&
@@ -295,12 +356,25 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                      ((jointCoords.Rshoulderx - jointCoords.Rhandx) >= -110 ) &&
                      ((jointCoords.Rshouldery - jointCoords.Rhandy) <= 5) &&
                      ((jointCoords.Rshouldery - jointCoords.Rhandy) >= -15)
-                   )
-                 {
-                        cout << "T Pose Detected!" << endl << endl;
-                        return GESTURE_T;
-                 }
-
+                    )
+                    {
+                        gesture_states.tpose_gesture_state = gesture_states.TPOSE_DETECTING;
+                        gesture_states.cyclesInState_tpose_lost = 0;
+                    }
+                    else if(gesture_states.cyclesInState_tpose_lost >= STATIC_POSE_LOST_TIMEOUT)
+                    {
+                        gesture_states.tpose_gesture_state = gesture_states.TPOSE_INIT;
+                        gesture_states.cyclesInState_tpose_detecting = 0;
+                        gesture_states.cyclesInState_tpose_lost = 0;
+                    }
+                    else
+                    {
+                        gesture_states.cyclesInState_tpose_lost++;
+                    }
+                     break;
+                   }
+/*
+                 // O Pose Gesture
                  if( ((jointCoords.Lshoulderx - jointCoords.Lhandx) <= 15) &&
                      ((jointCoords.Lshoulderx - jointCoords.Lhandx) >= -10 ) &&
                      ((jointCoords.Lshouldery - jointCoords.Lhandy) <= 65) &&
@@ -314,8 +388,131 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                         cout << "O Pose Detected!" << endl << endl;
                         return GESTURE_0;
                  }
+*/
 
+
+    it = arr.begin();
+    arr.insert(it, jointCoords);
+    bool test[30] = {false};
+
+
+
+
+    //max
+    switch(gesture_states.flying_gesture_state)
+    {
+    case gesture_states.FLYING_INIT:
+        if((jointCoords.Lshouldery - jointCoords.Lhandy >= -20) &&
+           (jointCoords.Lshouldery - jointCoords.Lhandy <= 20) && //15
+           (jointCoords.Rshouldery - jointCoords.Rhandy >= -10) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy <= 30))
+        {
+            gesture_states.cyclesInState_flying = 0;
+            gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_1;
+        }
+        //cout << "FLYING_INIT" << endl;
+        break;
+
+    case gesture_states.FLYING_MAX_1:
+        if((jointCoords.Lshouldery - jointCoords.Lhandy >= -100) &&
+           (jointCoords.Lshouldery - jointCoords.Lhandy <= -60) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy >= -90) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy <= -50))
+        {
+            gesture_states.cyclesInState_flying = 0;
+            gesture_states.flying_gesture_state = gesture_states.FLYING_MIN_1;
+        }
+        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
+                    gesture_states.cyclesInState_flying = 0;
+                    gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_flying++;
+        }
+        //cout << "FLYING_MAX_1" << endl;
+        break;
+
+    case gesture_states.FLYING_MIN_1:
+        if((jointCoords.Lshouldery - jointCoords.Lhandy >= -20) &&
+           (jointCoords.Lshouldery - jointCoords.Lhandy <= 20) && //15
+           (jointCoords.Rshouldery - jointCoords.Rhandy >= -10) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy <= 30))
+        {
+            gesture_states.cyclesInState_flying = 0;
+            gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_2;
+        }
+        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
+                    gesture_states.cyclesInState_flying = 0;
+                    gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_flying++;
+        }
+                //cout << "FLYING_MIN_1" << endl;
+        break;
+
+    case gesture_states.FLYING_MAX_2:
+        if((jointCoords.Lshouldery - jointCoords.Lhandy >= -100) &&
+           (jointCoords.Lshouldery - jointCoords.Lhandy <= 0) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy >= -90) &&
+           (jointCoords.Rshouldery - jointCoords.Rhandy <= -50))
+        {
+            cout << "Flying gesture detected!" << endl;
+            gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
+            return GESTURE_FLYING;
+        }
+        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
+                    gesture_states.cyclesInState_flying = 0;
+                    gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_flying++;
+        }
+        //cout << "FLYING_MAX_2" << endl;
+        break;
+
+      default:
+        break;
     }
+
+
+
+
+// Don't delete. Will clean up code
+/*
+    it = arr.begin();
+    arr.insert(it, jointCoords);
+    bool test[10] = {false};
+//    for(int i = 0; i < 5; i++) {
+//        printJointCoords(arr.at(i));
+//    }
+
+    for(int i = 10; i < 20; i++) {
+        if(arr.at(0).heady - arr.at(i).heady >= 30) {
+            test[i-10] = true;
+        } else {
+            test[i-10] = false;
+        }
+    }
+
+    for(int i = 0; i < 10; i++) {
+        cout << test[i] << ", ";
+        if(test[i] == 0) {
+            detected = false;
+            break;
+        } else {
+            detected = true;
+        }
+    }
+cout << endl;
+    if(detected == true) {
+        cout << "SUCCESS!" << endl << endl;
+        detected = false;
+    }
+*/
 
     //printJointCoords(jointCoords);
 
@@ -329,8 +526,8 @@ void printJointCoords(jointCoords_t& jc)
          << "|RH: " << jc.Rhandx << ", " << jc.Rhandy
          << "|LS: " << jc.Lshoulderx << ", " << jc.Lshouldery
          << "|RS: " << jc.Rshoulderx << ", " << jc.Rshouldery
-         //<< "|H: " << skeletonPoints.at(2).image.x << ", " << skeletonPoints.at(2).image.y
-         //<< "|S: " << skeletonPoints.at(3).image.x << ", " << skeletonPoints.at(3).image.y
+         //<< "|H: " << jc.headx << ", " << jc.heady
+         //<< "|S: " << jc.Spinex << ", " << jc.Spiney
          << endl;
 }
 
@@ -338,12 +535,22 @@ void playContent(gestures_e gesture, bool &finished)
 {
     // Play the specified video in fullscreen mode and close vlc when finished
     // (We should use this in our production code)
-    //system("cvlc -f --play-and-exit file:///home/zac/electricTree/videos/test.mov");
+    system("cvlc -f --play-and-exit file:///home/zac/electricTree/videos/test.mov");
 
     // Play the specified video on a loop (useful for testing cancel gesture)
-    system("cvlc -R file:///home/zac/electricTree/videos/test.mov");
+    //system("cvlc -R file:///home/zac/electricTree/videos/test.mov");
 
     // Set finished to true. This is a reference so its value will be seen in the main loop.
     finished = true;
     cout << "playback completed! " << endl;
+}
+
+void resetGestureStates(gesture_states_t &gesture_states)
+{
+    gesture_states.usain_gesture_state = gesture_states.USAIN_INIT;
+    gesture_states.tpose_gesture_state = gesture_states.TPOSE_INIT;
+    gesture_states.o_gesture_state = gesture_states.O_INIT;
+    gesture_states.victory_gesture_state = gesture_states.VICTORY_INIT;
+    gesture_states.powerpose_gesture_state = gesture_states.POWERPOSE_INIT;
+    gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
 }
