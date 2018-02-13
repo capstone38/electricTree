@@ -34,9 +34,11 @@ struct gesture_states_t
     enum usain_gesture_e
     {
         USAIN_INIT,
-        USAIN_DETECTING
+        USAIN_DETECTING,
+        USAIN_LOST
     } usain_gesture_state;
-    int cyclesInState_usain;
+    int cyclesInState_usain_detecting;
+    int cyclesInState_usain_lost;
 
     enum tpose_gesture_e
     {
@@ -58,16 +60,20 @@ struct gesture_states_t
     enum victory_gesture_e
     {
         VICTORY_INIT,
-        VICTORY_DETECTING
+        VICTORY_DETECTING,
+        VICTORY_LOST
     } victory_gesture_state;
-    int cyclesInState_victory;
+    int cyclesInState_victory_detecting;
+    int cyclesInState_victory_lost;
 
     enum powerpose_gesture_e
     {
         POWERPOSE_INIT,
-        POWERPOSE_DETECTING
+        POWERPOSE_DETECTING,
+        POWERPOSE_LOST,
     } powerpose_gesture_state;
-    int cyclesInState_powerpose;
+    int cyclesInState_powerpose_detecting;
+    int cyclesInState_powerpose_lost;
 
     // dynamic gestures begin
 
@@ -83,8 +89,8 @@ struct gesture_states_t
 };
 
 // gesture detection timeouts (units are frames)
-#define STATIC_POSE_DETECTING_TIMEOUT 20
-#define STATIC_POSE_LOST_TIMEOUT 4
+#define STATIC_POSE_DETECTING_TIMEOUT 10
+#define STATIC_POSE_LOST_TIMEOUT 5
 #define FLYING_TIMEOUT 15
 
 
