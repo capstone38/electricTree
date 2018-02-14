@@ -214,6 +214,9 @@ int main(int argc, char** argv)
         }
     }
 
+    system("killall vlc");
+
+
     pt_utils.stop_camera();
     actualModuleConfig.projection->release();
     cout << "-------- Stopping --------" << endl;
