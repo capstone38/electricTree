@@ -5,7 +5,8 @@
 #include <iostream>
 #include <signal.h>
 #include <thread>
-
+#include <cstdlib>
+#include <ctime>
 
 // Boost Libraries
 #include <boost/interprocess/ipc/message_queue.hpp>
@@ -75,6 +76,9 @@ int main(int argc, char** argv)
              sizeof(bool));
     unsigned int priority;
     message_queue::size_type recvd_size;
+
+    // Init RNG
+    srand(time(nullptr));
 
     state_e state = STATE_IDLE;
     int cyclesSpentIdle = 0;
@@ -1051,6 +1055,16 @@ void playContent(gestures_e gesture, bool &finished)
 
     // Play the specified video on a loop (useful for testing cancel gesture)
     //system("cvlc -R file:///home/zac/electricTree/videos/test.mov");
+    int rand_idx;
+
+    string vlc_cmd ("cvlc -f --play-and-exit --no-video-title-show ");
+    string base_path ("file:///home/zac/electricTree/videos/");
+
+    string title;
+    string idx (to_string(rand_idx));
+    string ext (".mp4");
+
+    string full_cmd;
 
     switch (gesture)
     {
@@ -1064,7 +1078,23 @@ void playContent(gestures_e gesture, bool &finished)
         system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
         break;
     case GESTURE_IDLE:
-        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/idle.mp4");
+        rand_idx = rand() % 3;
+        idx.assign(to_string(rand_idx));
+        cout << rand_idx << endl;
+        ext.assign(".mp4");
+
+        if(rand_idx > 0)
+        {
+            title.assign("idle-");
+            full_cmd.assign(vlc_cmd + base_path + title + idx + ext);
+        }
+        else
+        {
+            title.assign("idle");
+            full_cmd.assign(vlc_cmd + base_path + title + ext);
+        }
+
+        system(full_cmd.c_str());
         break;
     default:
         system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/test.mov");
