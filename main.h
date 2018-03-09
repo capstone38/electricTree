@@ -23,10 +23,8 @@ enum gestures_e
 {
     GESTURE_WAVE=0,
     GESTURE_POINT,
-    GESTURE_FLEX,
     GESTURE_USAIN,
     GESTURE_T,
-    GESTURE_O,
     GESTURE_VICTORY,
     GESTURE_POWERPOSE,
     GESTURE_FLYING,
@@ -34,6 +32,8 @@ enum gestures_e
     GESTURE_WAVING_L,
     GESTURE_JUMPING,
     GESTURE_POINTING_TR,
+    GESTURE_POINTING_R,
+    GESTURE_POINTING_BR,
     GESTURE_IDLE,
     GESTURE_UNDEFINED
 };
@@ -94,6 +94,24 @@ struct gesture_states_t
     int cyclesInState_pointing_tr_detecting;
     int cyclesInState_pointing_tr_lost;
 
+    enum pointing_r_gesture_e
+    {
+        POINTING_R_INIT,
+        POINTING_R_DETECTING,
+        POINTING_R_LOST,
+    } pointing_r_gesture_state;
+    int cyclesInState_pointing_r_detecting;
+    int cyclesInState_pointing_r_lost;
+
+    enum pointing_br_gesture_e
+    {
+        POINTING_BR_INIT,
+        POINTING_BR_DETECTING,
+        POINTING_BR_LOST,
+    } pointing_br_gesture_state;
+    int cyclesInState_pointing_br_detecting;
+    int cyclesInState_pointing_br_lost;
+
     // dynamic gestures begin
 
     enum flying_gesture_e
@@ -138,7 +156,7 @@ struct gesture_states_t
 // gesture detection timeouts (units are frames)
 #define STATIC_POSE_DETECTING_TIMEOUT 10
 #define STATIC_POSE_LOST_TIMEOUT 5
-#define FLYING_TIMEOUT 15
+#define FLYING_TIMEOUT 20
 #define WAVING_TIMEOUT 20
 #define JUMPING_TIMEOUT 30
 
