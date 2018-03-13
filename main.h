@@ -31,9 +31,14 @@ enum gestures_e
     GESTURE_WAVING_R,
     GESTURE_WAVING_L,
     GESTURE_JUMPING,
+    GESTURE_POINTING_TRF,
+    GESTURE_POINTING_RF,
+    GESTURE_POINTING_TLF,
+    GESTURE_POINTING_LF,
     GESTURE_POINTING_TR,
     GESTURE_POINTING_R,
-    GESTURE_POINTING_BR,
+    GESTURE_POINTING_TL,
+    GESTURE_POINTING_L,
     GESTURE_IDLE,
     GESTURE_UNDEFINED
 };
@@ -85,6 +90,42 @@ struct gesture_states_t
     int cyclesInState_powerpose_detecting;
     int cyclesInState_powerpose_lost;
 
+    enum pointing_trf_gesture_e
+    {
+        POINTING_TRF_INIT,
+        POINTING_TRF_DETECTING,
+        POINTING_TRF_LOST,
+    } pointing_trf_gesture_state;
+    int cyclesInState_pointing_trf_detecting;
+    int cyclesInState_pointing_trf_lost;
+
+    enum pointing_rf_gesture_e
+    {
+        POINTING_RF_INIT,
+        POINTING_RF_DETECTING,
+        POINTING_RF_LOST,
+    } pointing_rf_gesture_state;
+    int cyclesInState_pointing_rf_detecting;
+    int cyclesInState_pointing_rf_lost;
+
+    enum pointing_tlf_gesture_e
+    {
+        POINTING_TLF_INIT,
+        POINTING_TLF_DETECTING,
+        POINTING_TLF_LOST,
+    } pointing_tlf_gesture_state;
+    int cyclesInState_pointing_tlf_detecting;
+    int cyclesInState_pointing_tlf_lost;
+
+    enum pointing_lf_gesture_e
+    {
+        POINTING_LF_INIT,
+        POINTING_LF_DETECTING,
+        POINTING_LF_LOST,
+    } pointing_lf_gesture_state;
+    int cyclesInState_pointing_lf_detecting;
+    int cyclesInState_pointing_lf_lost;
+
     enum pointing_tr_gesture_e
     {
         POINTING_TR_INIT,
@@ -103,14 +144,23 @@ struct gesture_states_t
     int cyclesInState_pointing_r_detecting;
     int cyclesInState_pointing_r_lost;
 
-    enum pointing_br_gesture_e
+    enum pointing_tl_gesture_e
     {
-        POINTING_BR_INIT,
-        POINTING_BR_DETECTING,
-        POINTING_BR_LOST,
-    } pointing_br_gesture_state;
-    int cyclesInState_pointing_br_detecting;
-    int cyclesInState_pointing_br_lost;
+        POINTING_TL_INIT,
+        POINTING_TL_DETECTING,
+        POINTING_TL_LOST,
+    } pointing_tl_gesture_state;
+    int cyclesInState_pointing_tl_detecting;
+    int cyclesInState_pointing_tl_lost;
+
+    enum pointing_l_gesture_e
+    {
+        POINTING_L_INIT,
+        POINTING_L_DETECTING,
+        POINTING_L_LOST,
+    } pointing_l_gesture_state;
+    int cyclesInState_pointing_l_detecting;
+    int cyclesInState_pointing_l_lost;
 
     // dynamic gestures begin
 
