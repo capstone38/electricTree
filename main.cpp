@@ -146,51 +146,30 @@ int main(int argc, char** argv)
             if(personData){
                 Intel::RealSense::PersonTracking::PersonTrackingData::PersonTracking* personTrackData = personData->QueryTracking();
                 Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass = personTrackData->QueryCenterMass();
-                cout<<"Person ID: " << id <<" has centerMass x:" << centerMass.image.point.x <<endl;
-                cout<<"Person ID: " << id <<" has centerMass y:" << centerMass.image.point.y <<endl<<endl;
+                cout<<"Person ID: " << id <<" has centerMass x:" << centerMass.world.point.x <<endl;
+                cout<<"Person ID: " << id <<" has centerMass y:" << centerMass.world.point.y <<endl;
+                cout<<"Person ID: " << id <<" has centerMass z:" << centerMass.world.point.z <<endl<<endl;
+
+
+                if(personIsInCenter(centerMass))
+                {
+                    cout<<"Person ID: " << id <<" is in center!" <<endl<<endl;
+
+                    trackingData->StartTracking(id);
+
+                    personJoints = personData->QuerySkeletonJoints();
+                    std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
+                    personJoints->QueryJoints(skeletonPoints.data());
+
+                    gestureDetected = detectGestures(personJoints, gesture_states);
+
+                }
+                else
+                {
+                    trackingData->StopTracking(id);
+                }
             }
         }
-
-
-//        auto personData = trackingData->QueryPersonData(Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, 0);
-//        if(personData){
-//            personJoints = ptModule->QueryOutput()->QueryPersonDataById(0)->QuerySkeletonJoints();
-//            std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
-//            personJoints->QueryJoints(skeletonPoints.data());
-//            cout <<"Joint 0: "<< "has " <<skeletonPoints.at(0).image.x  <<endl<<endl;
-//        }
-
-//        console_view->set_tracking(ptModule);
-
-
-
-//        personJoints = console_view->on_person_skeleton(ptModule);
-
-
-//        for(int i=0;i<numTracked; i++){
-
-//            auto personData = trackingData->QueryPersonData(Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
-
-//            if(personData){
-//                trackingData->StartTracking(personData->QueryTracking()->QueryId());
-//                Intel::RealSense::PersonTracking::PersonTrackingData::PersonTracking* personTrackData = personData->QueryTracking();
-//                int id = personTrackData->QueryId();
-//                Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass = personTrackData->QueryCenterMass();
-//                cout<<"Person ID: " << id <<" has centerMass x:" << centerMass.image.point.x <<endl;
-//                cout<<"Person ID: " << id <<" has centerMass y:" << centerMass.image.point.y <<endl<<endl;
-
-
-//                personJoints = ptModule->QueryOutput()->QueryPersonDataById(i)->QuerySkeletonJoints();
-
-//                std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
-
-//                personJoints->QueryJoints(skeletonPoints.data());
-
-//                cout <<"Joint 0: "<< "has " <<skeletonPoints.at(0).image.x  <<endl<<endl;
-
-//                trackingData->StopTracking(personData->QueryTracking()->QueryId());
-//            }
-//        }
 
 
 
@@ -366,6 +345,20 @@ int main(int argc, char** argv)
     actualModuleConfig.projection->release();
     cout << "-------- Stopping --------" << endl;
     return 0;
+}
+
+bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass)
+{
+    if(     centerMass.world.point.x >= -0.3 &&
+            centerMass.world.point.z >= 1.8 &&
+            centerMass.world.point.x <= 0.3 &&
+            centerMass.world.point.z <= 2.4
+            )
+    {
+        return true;
+    }
+
+    return false;
 }
 
 gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states)
