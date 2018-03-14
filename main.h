@@ -43,6 +43,8 @@ enum gestures_e
     GESTURE_UNDEFINED
 };
 
+#define INVALID_PERSONID -1
+
 struct gesture_states_t
 {
     // static gestures begin

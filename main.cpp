@@ -36,6 +36,7 @@ int main(int argc, char** argv)
 
     rs::core::video_module_interface::actual_module_config actualModuleConfig;
     rs::person_tracking::person_tracking_video_module_interface* ptModule = nullptr;
+    Intel::RealSense::PersonTracking::PersonTrackingData::Person *personData = nullptr;
 
 
     // Initializing Camera and Person Tracking modules
@@ -88,6 +89,10 @@ int main(int argc, char** argv)
     gesture_states_t gesture_states;
     resetGestureStates(gesture_states);
 
+    int pid_in_center;
+    int pid_in_center_prev;
+
+
     // Start main loop
     while(!pt_utils.user_request_exit())
     {
@@ -124,114 +129,64 @@ int main(int argc, char** argv)
 
         trackingData = ptModule->QueryOutput();
 
-        numTracked = trackingData->QueryNumberOfPeople();
-        cout << "numTracked: " << numTracked << endl <<endl;
+        auto ids_in_frame = console_view->get_person_ids(ptModule->QueryOutput());
 
+        pid_in_center_prev = pid_in_center;
 
-        auto new_ids = console_view->get_person_ids(ptModule->QueryOutput());
-
-        for(auto iter = new_ids->begin(); iter != new_ids->end(); ++iter)
-        {
-            cout << "Id in set: " << *iter << endl;
-        }
-
-
-        for(auto iter = new_ids->begin(); iter != new_ids->end(); ++iter){
-            cout<<"testing"<<endl;
+        for(auto iter = ids_in_frame->begin(); iter != ids_in_frame->end(); ++iter){
             int id = *iter;
-            //auto personData = trackingData->QueryPersonData(Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, id);
 
-            auto personData = trackingData->QueryPersonDataById(id);
+            personData = trackingData->QueryPersonDataById(id);
 
             if(personData){
                 Intel::RealSense::PersonTracking::PersonTrackingData::PersonTracking* personTrackData = personData->QueryTracking();
                 Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass = personTrackData->QueryCenterMass();
-                cout<<"Person ID: " << id <<" has centerMass x:" << centerMass.world.point.x <<endl;
-                cout<<"Person ID: " << id <<" has centerMass y:" << centerMass.world.point.y <<endl;
-                cout<<"Person ID: " << id <<" has centerMass z:" << centerMass.world.point.z <<endl<<endl;
-
 
                 if(personIsInCenter(centerMass))
                 {
-                    cout<<"Person ID: " << id <<" is in center!" <<endl<<endl;
-
-                    trackingData->StartTracking(id);
-
-                    personJoints = personData->QuerySkeletonJoints();
-                    std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
-                    personJoints->QueryJoints(skeletonPoints.data());
-
-                    gestureDetected = detectGestures(personJoints, gesture_states);
-
+                    // If person in center, say which id
+                    pid_in_center = id;
+                    break;
                 }
                 else
                 {
-                    trackingData->StopTracking(id);
+                    // If no one in center, indicate so.
+                    pid_in_center = INVALID_PERSONID;
                 }
+            }
+            else
+            {
+                // If we no longer see a person, back to idle state
+                pid_in_center = INVALID_PERSONID;
+            }
+        }
+
+        if(pid_in_center != pid_in_center_prev)
+        {
+            trackingData->StopTracking(pid_in_center_prev);
+
+            if(pid_in_center != INVALID_PERSONID)
+            {
+                trackingData->StartTracking(pid_in_center);
             }
         }
 
 
-
-
-  /*      //Main program FSM implementation
-                switch (state)
+        //Main program FSM implementation
+        switch (state)
         {
         case STATE_IDLE:
             numTracked = trackingData->QueryNumberOfPeople();
-            //cout << "numTracked: " << numTracked << endl;
 
-            //            if(1)
-            //            {
-            //                auto config = ptModule->QueryConfiguration()->QueryRecognition();
-            //                auto database = config->QueryDatabase();
-
-            //                cout << "num registered users: " << database->GetNumberOfRegisteredUsers() << endl;
-            //            }
-
-            if(numTracked == 1)
+            if(pid_in_center != INVALID_PERSONID)
             {
                 // If we are tracking exactly one person, detect their gesture
                 cout << "found someone!" << endl;
-                int personId = trackingData->QueryPersonData(
-                            Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, 0)->QueryTracking()->QueryId();
-                cout << "ID before clearing database: " << personId << endl;
+                cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
-
-                auto config = ptModule->QueryConfiguration()->QueryRecognition();
-                auto database = config->QueryDatabase();
-
-                database->Clear();
-
-                int *ids = new int(100);
-                int *numIds = new int;
-
-                database->GetRegisteredUsersIds(ids, 100, numIds);
-
-                cout << *numIds << " Ids registered in database" << endl;
-                for(int i=0; i< *numIds; i++)
-                {
-                    cout << ids[i] << endl;
-                }
-
-                delete ids;
-                delete numIds;
-
-
-
-                                personId = trackingData->QueryPersonData(
-                                            Intel::RealSense::PersonTracking::PersonTrackingData::ACCESS_ORDER_BY_INDEX, 0)->QueryTracking()->QueryId();
-                                cout << "ID after clearing database: " << personId << endl;
-
-                if(personId == 0)
-                {
-                    console_view->set_tracking(ptModule);
-                    state = STATE_READY;
-                    //gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_1;
-                }
-
+                state = STATE_READY;
+                break;
             }
-
             else if(cyclesSpentIdle >= SEC_TO_CYCLES(10))
             {
                 // We have idled for 10 seconds. Begin playback of idle video
@@ -242,19 +197,16 @@ int main(int argc, char** argv)
             break;
 
         case STATE_READY:
-            // Track skeleton joints
-            if(trackingData->QueryNumberOfPeople() != 1)
-            {
-                // If we no longer see a person, back to idle state
-                state = STATE_IDLE;
-                cyclesSpentIdle = 0;
-                //trackingData->StopTracking(0);
+            // Track skeleton joints of person in centre,
+            // or go back to idle if person has left centre
 
-            }
-            else
+
+            if(pid_in_center != INVALID_PERSONID)
             {
-                // Start tracking the first person detected in the frame
-                personJoints = console_view->on_person_skeleton(ptModule);
+                personJoints = personData->QuerySkeletonJoints();
+                std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
+                personJoints->QueryJoints(skeletonPoints.data());
+
                 gestureDetected = detectGestures(personJoints, gesture_states);
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
@@ -262,27 +214,35 @@ int main(int argc, char** argv)
                     state = STATE_PLAYBACK_START;
                 }
             }
-
+            else
+            {
+                // If we no longer see a person, back to idle state
+                state = STATE_IDLE;
+                cyclesSpentIdle = 0;
+            }
             break;
 
         case STATE_PLAYBACK_START:
             // Issue system call to playback video content in a detached thread
             playbackFinished = false;
-        {
-            thread video(playContent, gestureDetected, ref(playbackFinished));
-            video.detach();
-        }
+
+            {
+                thread video(playContent, gestureDetected, ref(playbackFinished));
+                video.detach();
+            }
 
             state = STATE_PLAYBACK_UNDERWAY;
             break;
 
         case STATE_PLAYBACK_UNDERWAY:
             // If we are still detecting a person, listen for cancel gesture
-            numTracked = trackingData->QueryNumberOfPeople();
 
-            if(numTracked == 1)
+            if(pid_in_center != INVALID_PERSONID)
             {
-                personJoints = console_view->on_person_skeleton(ptModule);
+                personJoints = personData->QuerySkeletonJoints();
+                std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
+                personJoints->QueryJoints(skeletonPoints.data());
+
                 gestureDetected = detectGestures(personJoints, gesture_states);
 
                 // Implement cancel gesture.
@@ -291,6 +251,7 @@ int main(int argc, char** argv)
                     system("killall vlc");
                 }
             }
+
 
             if(playbackFinished)
             {
@@ -306,18 +267,17 @@ int main(int argc, char** argv)
         case STATE_IDLEVIDEO_START:
             // Issue system call to playback idle video content in a detached thread
             playbackFinished = false;
-        {
-            thread idlevideo(playContent, GESTURE_IDLE, ref(playbackFinished));
-            idlevideo.detach();
-        }
+
+            {
+               thread idlevideo(playContent, GESTURE_IDLE, ref(playbackFinished));
+             idlevideo.detach();
+            }
 
             state = STATE_IDLEVIDEO_UNDERWAY;
             break;
 
         case STATE_IDLEVIDEO_UNDERWAY:
-            numTracked = trackingData->QueryNumberOfPeople();
-
-            if(numTracked == 1)
+            if(pid_in_center != INVALID_PERSONID)
             {
                 cout << "Person detected during idle content playback!" << endl;
                 system("killall vlc");
@@ -334,7 +294,7 @@ int main(int argc, char** argv)
             }
 
             break;
-        } */
+        }
 
     }
 
@@ -411,7 +371,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
      */
 
     // USAIN BOLT POSE
-  /*  switch(gesture_states.usain_gesture_state)
+    switch(gesture_states.usain_gesture_state)
     {
     case gesture_states.USAIN_INIT: //everything increased by 10
         //        if( (LeftX <= 55) &&
@@ -1636,7 +1596,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     }
 
     // JUMPING GESTURE
-/*
+
     switch(gesture_states.jumping_gesture_state)
     {
     case gesture_states.JUMPING_INIT:
@@ -1717,7 +1677,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     default:
         break;
     }
-*/
+
 
 
     printJointCoords(jointCoords);
