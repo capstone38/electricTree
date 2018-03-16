@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 
         for(auto iter = ids_in_frame->begin(); iter != ids_in_frame->end(); ++iter){
             int id = *iter;
-            cout<< "id: "<<id<<endl;
+            //cout<< "id: "<<id<<endl;
 
             personData = trackingData->QueryPersonDataById(id);
 
@@ -1734,7 +1734,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
         if(jumpCount<15){
             jumpVector.push_back(jointCoords.heady); // do this 7 times
-            cout<<jumpCount<<endl<<endl;
+            //cout<<jumpCount<<endl<<endl;
             jumpCount++;//maybe stop after 7 times
         }
         else{
@@ -1742,6 +1742,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
             jumpVector.push_back(jointCoords.heady);
             for(int i=1; i<15; i++){
                 if((jumpVector[i] < jumpVector[0] - 30) &&
+                        (jumpVector[i] > jumpVector[0] - 70) &&
                         (jointCoords.headz >= 1650) &&
                         (jointCoords.headz <= 2200)){
                     jumpStartValue = jumpVector[0];
@@ -1829,7 +1830,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     //            gesture_states.cyclesInState_jumping = 0;
     //            jumpHeadPreX = jumpHeadCurrX;
     //            jumpHeadPreY = jumpHeadCurrY;
-    //            jumpHeadPreZ = jumpHeadCurrZ;
+    //            jumpHeadPid:reZ = jumpHeadCurrZ;
     //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
     //        }
     //        else
@@ -1853,7 +1854,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     //        break;
     //    }
 
-//        printJointCoords(jointCoords);
+        printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
