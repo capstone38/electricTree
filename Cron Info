@@ -1,0 +1,3 @@
+The cron service checks for files in the /var/spool/cron and /etc/cron.d directories and the /etc/anacrontab file. The contents of these files define cron jobs that are to be run at various intervals. The individual user cron files are located in /var/spool/cron, and system services and applications generally add cron job files in the /etc/cron.d directory. The /etc/anacrontab is a special case that will be covered later in this article.
+
+

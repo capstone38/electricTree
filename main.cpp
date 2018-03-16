@@ -18,16 +18,17 @@
 #include "pt_utils.hpp"
 #include "pt_console_display.hpp"
 
-
 #include "main.h"
-
-
 
 using namespace std;
 using namespace boost::interprocess;
 
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
+
+vector<int> jumpVector;
+int jumpCount = 0;
+int jumpStartValue;
 
 int main(int argc, char** argv)
 {
@@ -57,7 +58,7 @@ int main(int argc, char** argv)
     // Configure enabled Pointing Gesture
     if(ptModule->set_module_config(actualModuleConfig) != rs::core::status_no_error)
     {
-        cerr<<"Error : Failed to configure the enabled Pointing Gesture" << endl;
+        cerr<<"Error: Failed to configure the enabled Pointing Gesture" << endl;
         return -1;
     }
 
@@ -89,8 +90,14 @@ int main(int argc, char** argv)
     gesture_states_t gesture_states;
     resetGestureStates(gesture_states);
 
-    int pid_in_center;
+    int pid_in_center = INVALID_PERSONID;
     int pid_in_center_prev;
+
+    // Initialize Jumping value to avoid garbage values;
+    jumpHeadPreX = -10000;
+    jumpHeadPreY = -10000;
+    jumpHeadPreZ = -10000;
+
 
 
     // Start main loop
@@ -135,12 +142,14 @@ int main(int argc, char** argv)
 
         for(auto iter = ids_in_frame->begin(); iter != ids_in_frame->end(); ++iter){
             int id = *iter;
+            cout<< "id: "<<id<<endl;
 
             personData = trackingData->QueryPersonDataById(id);
 
             if(personData){
                 Intel::RealSense::PersonTracking::PersonTrackingData::PersonTracking* personTrackData = personData->QueryTracking();
                 Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass = personTrackData->QueryCenterMass();
+
 
                 if(personIsInCenter(centerMass))
                 {
@@ -152,12 +161,16 @@ int main(int argc, char** argv)
                 {
                     // If no one in center, indicate so.
                     pid_in_center = INVALID_PERSONID;
+                    jumpVector.clear();
+                    jumpCount=0;
                 }
             }
             else
             {
                 // If we no longer see a person, back to idle state
                 pid_in_center = INVALID_PERSONID;
+                jumpVector.clear();
+                jumpCount=0;
             }
         }
 
@@ -226,10 +239,10 @@ int main(int argc, char** argv)
             // Issue system call to playback video content in a detached thread
             playbackFinished = false;
 
-            {
-                thread video(playContent, gestureDetected, ref(playbackFinished));
-                video.detach();
-            }
+        {
+            thread video(playContent, gestureDetected, ref(playbackFinished));
+            video.detach();
+        }
 
             state = STATE_PLAYBACK_UNDERWAY;
             break;
@@ -268,10 +281,10 @@ int main(int argc, char** argv)
             // Issue system call to playback idle video content in a detached thread
             playbackFinished = false;
 
-            {
-               thread idlevideo(playContent, GESTURE_IDLE, ref(playbackFinished));
-             idlevideo.detach();
-            }
+        {
+            thread idlevideo(playContent, GESTURE_IDLE, ref(playbackFinished));
+            idlevideo.detach();
+        }
 
             state = STATE_IDLEVIDEO_UNDERWAY;
             break;
@@ -309,12 +322,15 @@ int main(int argc, char** argv)
 
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass)
 {
-    if(     centerMass.world.point.x >= -0.3 &&
-            centerMass.world.point.z >= 1.8 &&
-            centerMass.world.point.x <= 0.3 &&
+    if(     centerMass.world.point.x >= 0.0 &&
+            centerMass.world.point.z >= 1.5 &&
+            centerMass.world.point.x <= 0.2 &&
             centerMass.world.point.z <= 2.4
             )
     {
+
+//        cout<< "x: " << centerMass.world.point.x<<endl;
+//        cout<< "z: " << centerMass.world.point.z<<endl<<endl;
         return true;
     }
 
@@ -326,11 +342,12 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     int numDetectedJoints = personJoints->QueryNumJoints();
     std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
 
+
     personJoints->QueryJoints(skeletonPoints.data());
 
     jointCoords_t jointCoords;
 
-    cout << "num detected joints" << numDetectedJoints << endl;
+    //    cout << "num detected joints" << numDetectedJoints << endl;
 
     //cout << skeletonPoints.at(0).image.x << endl;
 
@@ -355,6 +372,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     jointCoords.headz = skeletonPoints.at(2).world.z;
     jointCoords.Spinex = skeletonPoints.at(3).image.x;
     jointCoords.Spiney = skeletonPoints.at(3).image.y;
+    jointCoords.Spinez = skeletonPoints.at(3).world.z;
 
     // check for each pose sequentially.
     // some way to make this cleaner, perhaps a helper function with just jointCoords struct as only parameter?
@@ -365,6 +383,14 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     int RightX = jointCoords.Rshoulderx - jointCoords.Rhandx;
     int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
     int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
+
+    jumpHeadCurrX = jointCoords.headx;
+    jumpHeadCurrY = jointCoords.heady;
+    jumpHeadCurrZ = jointCoords.headz;
+
+
+
+
 
     /*
      * STATIC GESTURES BEGIN
@@ -738,7 +764,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (LeftY >= 50) &&
                 (LeftZ <= 500) &&
                 (LeftZ >= 300) &&
-               ((RightY < -40) || (RightY > 110)))
+                ((RightY < -40) || (RightY > 110)))
         {
             gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_DETECTING;
             cout << "DETECTING POINTING TRF..." << endl;
@@ -753,7 +779,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (LeftY >= 50) &&
                 (LeftZ <= 500) &&
                 (LeftZ >= 300) &&
-               ((RightY < -40) || (RightY > 110)))
+                ((RightY < -40) || (RightY > 110)))
         {
             gesture_states.cyclesInState_pointing_trf_detecting++;
             cout << "DETECTING POINTING TRF..." << gesture_states.cyclesInState_pointing_trf_detecting << " CYCLES" << endl;
@@ -782,7 +808,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (LeftY >= 50) &&
                 (LeftZ <= 500) &&
                 (LeftZ >= 300) &&
-               ((RightY < -40) || (RightY > 110)))
+                ((RightY < -40) || (RightY > 110)))
         {
             gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_DETECTING;
             gesture_states.cyclesInState_pointing_trf_lost = 0;
@@ -1595,92 +1621,239 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
     }
 
-    // JUMPING GESTURE
 
-    switch(gesture_states.jumping_gesture_state)
+    // RUNNING
+    switch(gesture_states.running_gesture_state)
     {
-    case gesture_states.JUMPING_INIT:
-
-        if((jointCoords.heady < jumpHeadY - 20) &&
-                (jointCoords.heady != 0) && (jumpHeadY!=0) &&
-                (jointCoords.headz >= 1650) &&
-                (jointCoords.headz <= 2200) &&
-                ((LeftY < 45) || (LeftY > 100)) &&
-                ((RightY < 50) || RightY > 90))
+    case gesture_states.RUNNING_INIT:
+        if(/*(RightX >= -40) &&
+                        (RightX <= -10) &&*/
+                (RightX >= -110) &&
+                (RightY >= -110) &&
+                (RightY <= -80) &&
+                (LeftX >= 0) &&
+                (LeftX <= 50) &&
+                (LeftY >= 0) &&
+                (LeftY <= 40))
         {
-            cout << "jumpMaxX "<<jointCoords.headx << endl;
-            cout << "HeadX "<<jumpHeadX << endl;
-            cout << "jumpMaxY "<<jointCoords.heady << endl;
-            cout << "HeadY "<<jumpHeadY << endl;
-            cout << "jumpMaxZ "<<jointCoords.headz << endl;
-            cout << "HeadZ "<<jumpHeadZ << endl <<endl;
-
-            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MAX;
+            gesture_states.cyclesInState_running = 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_MAX_1;
         }
-        else if(jointCoords.heady != 0){
-            jumpHeadY = jointCoords.heady;
-            jumpHeadX = jointCoords.headx;
-            jumpHeadZ = jointCoords.headz;
-//            cout << "preHeadY "<<jumpHeadY << endl;
-//            cout << "preHeadX "<<jumpHeadX << endl<<endl;
-            gesture_states.cyclesInState_jumping = 0;
-        }
-
-//                cout << "JUMPING_INIT..." << endl;
+        //        cout << "RUNNING_INIT..." << endl;
         break;
 
-    case gesture_states.JUMPING_MAX:
-        if((jointCoords.heady >= jumpHeadY - 15) && //+10 OG
-                (jointCoords.heady != 0) && (jumpHeadY!=0) &&
-                (jointCoords.headz >= 1650) &&
-                (jointCoords.headz <= 2200) &&
-                ((LeftY < 45) || (LeftY > 100)) &&
-                ((RightY < 50) || RightY > 90))
+    case gesture_states.RUNNING_MAX_1:
+        if((RightX >= -40) &&
+                (RightX <= 10) &&
+                (RightY >= -10) &&
+                (RightY <= 50) &&
+                (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
+                        (LeftX >= 10) &&
+                        (LeftX <= 40) &&
+                        (LeftY >= -100) &&
+                        (LeftY <= -70)*/)
         {
-//            cout << "jumpBackX "<<jointCoords.headx << endl;
-            cout << "jumpBackY "<<jointCoords.heady << endl;
-//            cout << "jumpBackZ "<<jointCoords.headz << endl<<endl;
-            gesture_states.cyclesInState_jumping = 0;
-            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MIN;
+            gesture_states.cyclesInState_running = 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_MIN_1;
         }
-        else if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
-            gesture_states.cyclesInState_jumping = 0;
-            jumpHeadX = jointCoords.headx;
-            jumpHeadY = jointCoords.heady;
-            jumpHeadZ = jointCoords.headz;
-            gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
+        else if(gesture_states.cyclesInState_running >= RUNNING_TIMEOUT){
+            gesture_states.cyclesInState_running = 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
         }
         else
         {
-            gesture_states.cyclesInState_jumping++;
+            gesture_states.cyclesInState_running++;
         }
-//        cout << "DIFF: " << jointCoords.heady - jumpHeadY << endl;
-        cout << "CURR: " << jointCoords.heady << endl;
-        cout << "JUMPING_MAX..." << "X: " << jumpHeadX << ", Y: " << jumpHeadY <<  ", Z: " << jumpHeadZ << endl <<endl;
+        cout << "RUNNING_MAX_1..." << endl;
         break;
 
-    case gesture_states.JUMPING_MIN:
+    case gesture_states.RUNNING_MIN_1:
+        if(/*(RightX >= -40) &&
+                                (RightX <= -10) &&*/
+                (RightX >= -110) &&
+                (RightY >= -110) &&
+                (RightY <= -80) &&
+                (LeftX >= 0) &&
+                (LeftX <= 50) &&
+                (LeftY >= 0) &&
+                (LeftY <= 40))
+        {
+            gesture_states.cyclesInState_running = 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_MAX_2;
+        }
+        else if(gesture_states.cyclesInState_running >= RUNNING_TIMEOUT){
+            gesture_states.cyclesInState_running = 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_running++;
+        }
+        cout << "RUNNING_MIN_1..." << endl;
+        break;
 
-        cout << "JUMPING GESTURE DETECTED!" << endl<<endl<<endl;
-
-//        gesture_states.cyclesInState_jumping = 0;
-//        jumpHeadX = jointCoords.headx;
-//        jumpHeadY = jointCoords.heady;
-//        jumpHeadZ = jointCoords.headz;
-
-        gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
-
-        return GESTURE_JUMPING;
-
+    case gesture_states.RUNNING_MAX_2:
+        if((RightX >= -40) &&
+                (RightX <= 10) &&
+                (RightY >= -10) &&
+                (RightY <= 50) &&
+                (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
+                        (LeftX >= 10) &&
+                        (LeftX <= 40) &&
+                        (LeftY >= -100) &&
+                        (LeftY <= -70)*/)
+        {
+            cout << "RUNNING GESTURE DETECTED!" << endl;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
+            return GESTURE_RUNNING;
+        }
+        else if(gesture_states.cyclesInState_running >= RUNNING_TIMEOUT){
+            gesture_states.cyclesInState_running= 0;
+            gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_running++;
+        }
+        //        cout << "RUNNING_MAX_2..." << endl;
         break;
 
     default:
         break;
     }
 
+    // JUMPING GESTURE
 
+    switch(gesture_states.jumping_gesture_state)
+    {
+    case gesture_states.JUMPING_INIT:
+        for(int i = 0; i < jumpVector.size(); i++ ) {
+//            cout << "in INIT "<<jumpVector[i] << ", ";
+        }
+        cout << endl;
 
-    printJointCoords(jointCoords);
+        if(jumpCount<15){
+            jumpVector.push_back(jointCoords.heady); // do this 7 times
+            cout<<jumpCount<<endl<<endl;
+            jumpCount++;//maybe stop after 7 times
+        }
+        else{
+            jumpVector.erase(jumpVector.begin());
+            jumpVector.push_back(jointCoords.heady);
+            for(int i=1; i<15; i++){
+                if((jumpVector[i] < jumpVector[0] - 30) &&
+                        (jointCoords.headz >= 1650) &&
+                        (jointCoords.headz <= 2200)){
+                    jumpStartValue = jumpVector[0];
+                    cout << "START VALUE: " << jumpStartValue << endl;
+                    gesture_states.jumping_gesture_state = gesture_states.JUMPING_MAX;
+                    //            cout << "ENTER JUMPMAX..." << endl;
+                    break;
+                }
+            }
+        }
+
+        //                cout << "JUMPING_INIT..." << endl;
+        break;
+    case gesture_states.JUMPING_MAX:
+        for(int i = 0; i < jumpVector.size(); i++ ) {
+//            cout << "in MAX "<<jumpVector[i] << ", ";
+        }
+        cout << endl;
+        if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
+            gesture_states.cyclesInState_jumping = 0;
+            gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
+            jumpVector.clear();
+            jumpCount=0;
+        } else {
+
+            if(/*abs(jointCoords.heady - jumpStartValue) <= 15*/ (jointCoords.heady > jumpStartValue - 15) &&
+                    (jointCoords.headz >= 1650) &&
+                    (jointCoords.headz <= 2200)) {
+                gesture_states.jumping_gesture_state = gesture_states.JUMPING_MIN;
+                break;
+            }
+            gesture_states.cyclesInState_jumping++;
+            cout << "JUMPING_MAX..." << endl;
+        }
+        break;
+
+    case gesture_states.JUMPING_MIN:
+        cout << "JUMPING GESTURE DETECTED!" << endl<<endl<<endl;
+        jumpVector.clear();
+        jumpCount=0;
+        gesture_states.cyclesInState_jumping = 0;
+        gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
+
+        return GESTURE_JUMPING;
+        break;
+
+    default:
+        break;
+    }
+
+    //    switch(gesture_states.jumping_gesture_state)
+    //    {
+    //    case gesture_states.JUMPING_INIT:
+    //        //        cout << "HEAD PREV: " << jumpHeadPreX << ", " << jumpHeadPreY << ", " << jumpHeadPreZ << " | CURR: " << jumpHeadCurrX << ", " << jumpHeadCurrY << ", " << jumpHeadCurrZ << endl;
+    //        if((jumpHeadCurrY < jumpHeadPreY - 20) &&
+    //                (jumpHeadCurrY != 0) && (jumpHeadPreY != 0) &&
+    //                (jumpHeadCurrZ >= 1650) &&
+    //                (jumpHeadCurrZ <= 2200) &&
+    //                ((LeftY < 45) || (LeftY > 100)) &&
+    //                ((RightY < 50) || RightY > 90))
+    //        {
+    //            //            cout << "ENTER JUMPMAX..." << endl;
+    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MAX;
+    //        }
+    //        else {
+    //            jumpHeadPreX = jumpHeadCurrX;
+    //            jumpHeadPreY = jumpHeadCurrY;
+    //            jumpHeadPreZ = jumpHeadCurrZ;
+    //            //            cout << "REPLACE OLD VALUES..." << endl;
+    //        }
+    //        //        cout << "JUMPING_INIT..." << endl;
+    //        break;
+    //    case gesture_states.JUMPING_MAX:
+    //        if((jumpHeadCurrY >= jumpHeadPreY - 5) && //+10 OG
+    //                (jumpHeadCurrY != 0) && (jumpHeadPreY!=0) &&
+    //                (jumpHeadCurrZ >= 1650) &&
+    //                (jumpHeadCurrY <= 2200) &&
+    //                ((LeftY < 45) || (LeftY > 100)) &&
+    //                ((RightY < 50) || RightY > 90))
+    //        {
+    //            gesture_states.cyclesInState_jumping = 0;
+    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MIN;
+    //        }
+    //        else if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
+    //            gesture_states.cyclesInState_jumping = 0;
+    //            jumpHeadPreX = jumpHeadCurrX;
+    //            jumpHeadPreY = jumpHeadCurrY;
+    //            jumpHeadPreZ = jumpHeadCurrZ;
+    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
+    //        }
+    //        else
+    //        {
+    //            gesture_states.cyclesInState_jumping++;
+    //        }
+    //        cout << "JUMPING_MAX: HEAD PREV: " << jumpHeadPreX << ", " << jumpHeadPreY << ", " << jumpHeadPreZ << " | CURR: " << jumpHeadCurrX << ", " << jumpHeadCurrY << ", " << jumpHeadCurrZ << endl;
+    //        break;
+
+    //    case gesture_states.JUMPING_MIN:
+    //        cout << "JUMPING GESTURE DETECTED!" << endl<<endl<<endl;
+    //        jumpHeadPreX = jumpHeadCurrX;
+    //        jumpHeadPreY = jumpHeadCurrY;
+    //        jumpHeadPreZ = jumpHeadCurrZ;
+    //        gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
+
+    //        return GESTURE_JUMPING;
+    //        break;
+
+    //    default:
+    //        break;
+    //    }
+
+//        printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
@@ -1696,9 +1869,10 @@ void printJointCoords(jointCoords_t& jc)
          << ", " << jc.Lshoulderz
          << "|RS: " << jc.Rshoulderx << ", " << jc.Rshouldery
          << ", " << jc.Rshoulderz
-                     << "|H: " << jc.headx << ", " << jc.heady
-            //         << ", " << jc.headz
+         << "|H: " << jc.headx << ", " << jc.heady
+         << ", " << jc.headz
             //         << "|S: " << jc.Spinex << ", " << jc.Spiney
+            //         << ", " << jc.Spinez
          << endl;
 }
 
@@ -1718,6 +1892,7 @@ void playContent(gestures_e gesture, bool &finished)
     string title;
     string idx (to_string(rand_idx));
     string ext (".mp4");
+    string ext2 (".mov");
 
     string full_cmd;
 
@@ -1730,34 +1905,53 @@ void playContent(gestures_e gesture, bool &finished)
         system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
         break;
     case GESTURE_T:
-        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
+        rand_idx = rand() % 2;
+        idx.assign(to_string(rand_idx));
+
+        if(rand_idx > 0)
+        {
+            title.assign("tpose-");
+            full_cmd.assign(vlc_cmd + base_path + title + idx + ext2);
+        }
+        else
+        {
+            title.assign("tpose");
+            full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        }
+
+        system(full_cmd.c_str());
+
+        //        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
         break;
-            case GESTURE_POINTING_TRF:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/toprightforward.mp4");
-                break;
-            case GESTURE_POINTING_RF:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/rightforward.mp4");
-                break;
-            case GESTURE_POINTING_TLF:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleftforward.mp4");
-                break;
-            case GESTURE_POINTING_LF:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/leftforward.mp4");
-            case GESTURE_POINTING_TR:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topright.mp4");
-                //system("cvlc -f --play-and-exit --start-time=100 --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
-                break;
-            case GESTURE_POINTING_R:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/right.mp4");
-                break;
-            case GESTURE_POINTING_TL:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleft.mp4");
-                break;
-            case GESTURE_POINTING_L:
-                system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/left.mp4");
-                break;
+    case GESTURE_POINTING_TRF:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/toprightforward.mp4");
+        break;
+    case GESTURE_POINTING_RF:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/rightforward.mp4");
+        break;
+    case GESTURE_POINTING_TLF:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleftforward.mp4");
+        break;
+    case GESTURE_POINTING_LF:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/leftforward.mp4");
+    case GESTURE_POINTING_TR:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topright.mp4");
+        //        system("cvlc -f --play-and-exit --start-time=100 --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
+        break;
+    case GESTURE_POINTING_R:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/right.mp4");
+        break;
+    case GESTURE_POINTING_TL:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleft.mp4");
+        break;
+    case GESTURE_POINTING_L:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/left.mp4");
+        break;
     case GESTURE_FLYING:
         system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/fly.mov");
+        break;
+    case GESTURE_RUNNING:
+        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/running.mp4");
         break;
     case GESTURE_IDLE:
         rand_idx = rand() % 3;
@@ -1807,6 +2001,6 @@ void resetGestureStates(gesture_states_t &gesture_states)
     gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
     gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
     gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
-
+    gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
 }
 

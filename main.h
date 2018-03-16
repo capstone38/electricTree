@@ -21,9 +21,7 @@ enum state_e
 
 enum gestures_e
 {
-    GESTURE_WAVE=0,
-    GESTURE_POINT,
-    GESTURE_USAIN,
+    GESTURE_USAIN=0,
     GESTURE_T,
     GESTURE_VICTORY,
     GESTURE_POWERPOSE,
@@ -39,6 +37,7 @@ enum gestures_e
     GESTURE_POINTING_R,
     GESTURE_POINTING_TL,
     GESTURE_POINTING_L,
+    GESTURE_RUNNING,
     GESTURE_IDLE,
     GESTURE_UNDEFINED
 };
@@ -203,6 +202,16 @@ struct gesture_states_t
         JUMPING_MIN,
     } jumping_gesture_state;
     int cyclesInState_jumping;
+
+    enum running_gesture_e
+    {
+        RUNNING_INIT,
+        RUNNING_MAX_1,  // right hand max
+        RUNNING_MIN_1,
+        RUNNING_MAX_2,
+        RUNNING_MIN_2
+    } running_gesture_state;
+    int cyclesInState_running;
 };
 
 // gesture detection timeouts (units are frames)
@@ -210,14 +219,18 @@ struct gesture_states_t
 #define STATIC_POSE_LOST_TIMEOUT 5
 #define FLYING_TIMEOUT 20
 #define WAVING_TIMEOUT 20
-#define JUMPING_TIMEOUT 30
-
+#define JUMPING_TIMEOUT 20
+#define RUNNING_TIMEOUT 25
 
 #define GESTURE_CANCEL GESTURE_WAVING_R // update this later if we want a different cancel gesture!!
 
-int jumpHeadX;
-int jumpHeadY;
-int jumpHeadZ;
+// variables used for jumping detection
+int jumpHeadPreX;
+int jumpHeadPreY;
+int jumpHeadPreZ;
+int jumpHeadCurrX;
+int jumpHeadCurrY;
+int jumpHeadCurrZ;
 
 struct jointCoords_t
 {
@@ -237,6 +250,7 @@ struct jointCoords_t
 
     int Spinex;
     int Spiney;
+    int Spinez;
     int headx;
     int heady;
     int headz;
