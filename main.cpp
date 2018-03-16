@@ -185,7 +185,16 @@ int main(int argc, char** argv)
                 cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
                 state = STATE_READY;
-                break;
+                
+                  // double-check there are no stray vlc processes running
+                system("killall vlc");
+  
+                {
+                        thread video(playContent, GESTURE_READY, ref(playbackFinished));
+                        video.detach();
+                }
+
+		break;
             }
             else if(cyclesSpentIdle >= SEC_TO_CYCLES(10))
             {
@@ -260,8 +269,14 @@ int main(int argc, char** argv)
 
                 // double-check there are no stray vlc processes running
                 system("killall vlc");
-            }
-            break;
+		
+    		{
+        		thread video(playContent, GESTURE_READY, ref(playbackFinished));
+        		video.detach();             
+                }
+    
+	    }
+	    break;
 
 
         case STATE_IDLEVIDEO_START:
@@ -1778,6 +1793,13 @@ void playContent(gestures_e gesture, bool &finished)
 
         system(full_cmd.c_str());
         break;
+    case GESTURE_READY:
+	title.assign("ready");
+	ext.assign(".mp4");
+	full_cmd.assign(vlc_cmd + base_path + title + ext);
+	
+	system(full_cmd.c_str());
+	break;
     default:
         system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/test.mov");
         break;
