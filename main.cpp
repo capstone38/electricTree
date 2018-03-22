@@ -26,10 +26,6 @@ using namespace boost::interprocess;
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
 
-vector<int> jumpVector;
-int jumpCount = 0;
-int jumpStartValue;
-
 int main(int argc, char** argv)
 {
     pt_utils pt_utils;
@@ -38,7 +34,6 @@ int main(int argc, char** argv)
     rs::core::video_module_interface::actual_module_config actualModuleConfig;
     rs::person_tracking::person_tracking_video_module_interface* ptModule = nullptr;
     Intel::RealSense::PersonTracking::PersonTrackingData::Person *personData = nullptr;
-
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -65,7 +60,6 @@ int main(int argc, char** argv)
     // Start the camera
     pt_utils.start_camera();
 
-    cout << endl << "-------- Press Esc key to exit --------" << endl << endl;
     Intel::RealSense::PersonTracking::PersonTrackingData *trackingData = ptModule->QueryOutput();
     Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints = nullptr;
 
@@ -92,13 +86,6 @@ int main(int argc, char** argv)
 
     int pid_in_center = INVALID_PERSONID;
     int pid_in_center_prev;
-
-    // Initialize Jumping value to avoid garbage values;
-    jumpHeadPreX = -10000;
-    jumpHeadPreY = -10000;
-    jumpHeadPreZ = -10000;
-
-
 
     // Start main loop
     while(!pt_utils.user_request_exit())
@@ -329,8 +316,8 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
             )
     {
 
-//        cout<< "x: " << centerMass.world.point.x<<endl;
-//        cout<< "z: " << centerMass.world.point.z<<endl<<endl;
+        //        cout<< "x: " << centerMass.world.point.x<<endl;
+        //        cout<< "z: " << centerMass.world.point.z<<endl<<endl;
         return true;
     }
 
@@ -384,14 +371,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
     int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
 
-    jumpHeadCurrX = jointCoords.headx;
-    jumpHeadCurrY = jointCoords.heady;
-    jumpHeadCurrZ = jointCoords.headz;
-
-
-
-
-
     /*
      * STATIC GESTURES BEGIN
      */
@@ -441,7 +420,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_usain_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "USAIN BOLT POSE DETECTED!" << endl << endl;
+                cout << "------- USAIN BOLT POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_USAIN;
             }
@@ -530,7 +509,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_victory_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "VICTORY GESTURE DETECTED!" << endl << endl;
+                cout << "------- VICTORY GESTURE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_VICTORY;
             }
@@ -620,7 +599,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_powerpose_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POWER POSE DETECTED!" << endl << endl;
+                cout << "------- POWER POSE DETECTED! -------" << endl << endl;
+                gesture_states.powerpose_count++;
+                cout << "CURR POWERPOSE COUNT: " << gesture_states.powerpose_count << endl;
+
                 resetGestureStates(gesture_states);
                 return GESTURE_POWERPOSE;
             }
@@ -708,7 +690,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_tpose_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "T POSE DETECTED!" << endl << endl;
+                cout << "------- T POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_T;
             }
@@ -752,8 +734,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     //POINTING POSES
 
-
-
     // POINTING TOP RIGHT FORWARD POSE
     switch(gesture_states.pointing_trf_gesture_state)
     {
@@ -786,7 +766,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_trf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING TOP RIGHT FORWARD POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING TOP RIGHT FORWARD POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_TRF;
             }
@@ -858,7 +838,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_rf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING RIGHT FORWARD POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING RIGHT FORWARD POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_RF;
             }
@@ -930,7 +910,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_tlf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING TOP LEFT FORWARD POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING TOP LEFT FORWARD POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_TLF;
             }
@@ -1002,7 +982,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_lf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING LEFT FORWARD POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING LEFT FORWARD POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_LF;
             }
@@ -1074,7 +1054,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_tr_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING TOP RIGHT POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING TOP RIGHT POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_TR;
             }
@@ -1146,7 +1126,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_r_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING RIGHT POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING RIGHT POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_R;
             }
@@ -1218,7 +1198,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_tl_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING TOP LEFT POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING TOP LEFT POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_TL;
             }
@@ -1290,7 +1270,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
             if(gesture_states.cyclesInState_pointing_l_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
             {
-                cout << "POINTING LEFT POSE DETECTED!" << endl << endl;
+                cout << "------- POINTING LEFT POSE DETECTED! -------" << endl << endl;
                 resetGestureStates(gesture_states);
                 return GESTURE_POINTING_L;
             }
@@ -1401,7 +1381,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -90) &&
                 (RightY <= -50))
         {
-            cout << "FLYING GESTURE DETECTED!" << endl;
+            cout << "------- FLYING GESTURE DETECTED! -------" << endl << endl;
             gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
             return GESTURE_FLYING;
         }
@@ -1503,7 +1483,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 ((RightX > 0) || (RightX < -50)) &&
                 ((RightY > 50) || (RightY < 20)))
         {
-            cout << "RIGHT WAVING GESTURE DETECTED!" << endl;
+            cout << "------- RIGHT WAVING GESTURE DETECTED! -------" << endl << endl;
             gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
             return GESTURE_WAVING_R;
         }
@@ -1602,7 +1582,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 ((LeftX > 70) || (LeftX < 0)) &&
                 ((LeftX > 50) || (LeftY < 0)))
         {
-            cout << "LEFT WAVING GESTURE DETECTED!" << endl;
+            cout << "------- LEFT WAVING GESTURE DETECTED! -------" << endl << endl;
             gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
             return GESTURE_WAVING_L;
         }
@@ -1627,7 +1607,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     {
     case gesture_states.RUNNING_INIT:
         if(/*(RightX >= -40) &&
-                        (RightX <= -10) &&*/
+                                (RightX <= -10) &&*/
                 (RightX >= -110) &&
                 (RightY >= -110) &&
                 (RightY <= -80) &&
@@ -1648,10 +1628,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -10) &&
                 (RightY <= 50) &&
                 (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
-                        (LeftX >= 10) &&
-                        (LeftX <= 40) &&
-                        (LeftY >= -100) &&
-                        (LeftY <= -70)*/)
+                                (LeftX >= 10) &&
+                                (LeftX <= 40) &&
+                                (LeftY >= -100) &&
+                                (LeftY <= -70)*/)
         {
             gesture_states.cyclesInState_running = 0;
             gesture_states.running_gesture_state = gesture_states.RUNNING_MIN_1;
@@ -1669,7 +1649,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     case gesture_states.RUNNING_MIN_1:
         if(/*(RightX >= -40) &&
-                                (RightX <= -10) &&*/
+                                        (RightX <= -10) &&*/
                 (RightX >= -110) &&
                 (RightY >= -110) &&
                 (RightY <= -80) &&
@@ -1698,12 +1678,12 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -10) &&
                 (RightY <= 50) &&
                 (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
-                        (LeftX >= 10) &&
-                        (LeftX <= 40) &&
-                        (LeftY >= -100) &&
-                        (LeftY <= -70)*/)
+                                (LeftX >= 10) &&
+                                (LeftX <= 40) &&
+                                (LeftY >= -100) &&
+                                (LeftY <= -70)*/)
         {
-            cout << "RUNNING GESTURE DETECTED!" << endl;
+            cout << "------- RUNNING GESTURE DETECTED! -------" << endl << endl;
             gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
             return GESTURE_RUNNING;
         }
@@ -1727,48 +1707,45 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     switch(gesture_states.jumping_gesture_state)
     {
     case gesture_states.JUMPING_INIT:
-        for(int i = 0; i < jumpVector.size(); i++ ) {
-//            cout << "in INIT "<<jumpVector[i] << ", ";
-        }
-        cout << endl;
 
-        if(jumpCount<15){
-            jumpVector.push_back(jointCoords.heady); // do this 7 times
-            //cout<<jumpCount<<endl<<endl;
-            jumpCount++;//maybe stop after 7 times
+//        cout << "in INIT: ";
+//        printJumpVector(jumpVector);
+
+        if(jumpCount < JUMPING_TIMEOUT){
+            jumpVector.push_back(jointCoords.heady);
+            //            cout<<jumpCount<<endl<<endl;
+            jumpCount++;
         }
         else{
             jumpVector.erase(jumpVector.begin());
             jumpVector.push_back(jointCoords.heady);
-            for(int i=1; i<15; i++){
-                if((jumpVector[i] < jumpVector[0] - 30) &&
+            for(int i = 1; i < JUMPING_TIMEOUT; i++){
+                if((jumpVector[i] < jumpVector[0] - 25) &&
                         (jumpVector[i] > jumpVector[0] - 70) &&
                         (jointCoords.headz >= 1650) &&
                         (jointCoords.headz <= 2200)){
                     jumpStartValue = jumpVector[0];
                     cout << "START VALUE: " << jumpStartValue << endl;
                     gesture_states.jumping_gesture_state = gesture_states.JUMPING_MAX;
-                    //            cout << "ENTER JUMPMAX..." << endl;
+//                    cout << "ENTER JUMPMAX..." << endl;
                     break;
                 }
             }
         }
 
-        //                cout << "JUMPING_INIT..." << endl;
+//        cout << "JUMPING_INIT..." << endl;
         break;
     case gesture_states.JUMPING_MAX:
-        for(int i = 0; i < jumpVector.size(); i++ ) {
-//            cout << "in MAX "<<jumpVector[i] << ", ";
-        }
-        cout << endl;
+        cout << "in MAX: ";
+        printJumpVector(jumpVector);
+
         if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
             gesture_states.cyclesInState_jumping = 0;
             gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
             jumpVector.clear();
             jumpCount=0;
         } else {
-
-            if(/*abs(jointCoords.heady - jumpStartValue) <= 15*/ (jointCoords.heady > jumpStartValue - 15) &&
+            if((jointCoords.heady > jumpStartValue - 15) &&
                     (jointCoords.headz >= 1650) &&
                     (jointCoords.headz <= 2200)) {
                 gesture_states.jumping_gesture_state = gesture_states.JUMPING_MIN;
@@ -1780,7 +1757,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
 
     case gesture_states.JUMPING_MIN:
-        cout << "JUMPING GESTURE DETECTED!" << endl<<endl<<endl;
+        cout << "JUMPING GESTURE DETECTED!" << endl << endl;
         jumpVector.clear();
         jumpCount=0;
         gesture_states.cyclesInState_jumping = 0;
@@ -1793,68 +1770,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
     }
 
-    //    switch(gesture_states.jumping_gesture_state)
-    //    {
-    //    case gesture_states.JUMPING_INIT:
-    //        //        cout << "HEAD PREV: " << jumpHeadPreX << ", " << jumpHeadPreY << ", " << jumpHeadPreZ << " | CURR: " << jumpHeadCurrX << ", " << jumpHeadCurrY << ", " << jumpHeadCurrZ << endl;
-    //        if((jumpHeadCurrY < jumpHeadPreY - 20) &&
-    //                (jumpHeadCurrY != 0) && (jumpHeadPreY != 0) &&
-    //                (jumpHeadCurrZ >= 1650) &&
-    //                (jumpHeadCurrZ <= 2200) &&
-    //                ((LeftY < 45) || (LeftY > 100)) &&
-    //                ((RightY < 50) || RightY > 90))
-    //        {
-    //            //            cout << "ENTER JUMPMAX..." << endl;
-    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MAX;
-    //        }
-    //        else {
-    //            jumpHeadPreX = jumpHeadCurrX;
-    //            jumpHeadPreY = jumpHeadCurrY;
-    //            jumpHeadPreZ = jumpHeadCurrZ;
-    //            //            cout << "REPLACE OLD VALUES..." << endl;
-    //        }
-    //        //        cout << "JUMPING_INIT..." << endl;
-    //        break;
-    //    case gesture_states.JUMPING_MAX:
-    //        if((jumpHeadCurrY >= jumpHeadPreY - 5) && //+10 OG
-    //                (jumpHeadCurrY != 0) && (jumpHeadPreY!=0) &&
-    //                (jumpHeadCurrZ >= 1650) &&
-    //                (jumpHeadCurrY <= 2200) &&
-    //                ((LeftY < 45) || (LeftY > 100)) &&
-    //                ((RightY < 50) || RightY > 90))
-    //        {
-    //            gesture_states.cyclesInState_jumping = 0;
-    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_MIN;
-    //        }
-    //        else if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
-    //            gesture_states.cyclesInState_jumping = 0;
-    //            jumpHeadPreX = jumpHeadCurrX;
-    //            jumpHeadPreY = jumpHeadCurrY;
-    //            jumpHeadPid:reZ = jumpHeadCurrZ;
-    //            gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
-    //        }
-    //        else
-    //        {
-    //            gesture_states.cyclesInState_jumping++;
-    //        }
-    //        cout << "JUMPING_MAX: HEAD PREV: " << jumpHeadPreX << ", " << jumpHeadPreY << ", " << jumpHeadPreZ << " | CURR: " << jumpHeadCurrX << ", " << jumpHeadCurrY << ", " << jumpHeadCurrZ << endl;
-    //        break;
-
-    //    case gesture_states.JUMPING_MIN:
-    //        cout << "JUMPING GESTURE DETECTED!" << endl<<endl<<endl;
-    //        jumpHeadPreX = jumpHeadCurrX;
-    //        jumpHeadPreY = jumpHeadCurrY;
-    //        jumpHeadPreZ = jumpHeadCurrZ;
-    //        gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
-
-    //        return GESTURE_JUMPING;
-    //        break;
-
-    //    default:
-    //        break;
-    //    }
-
-        printJointCoords(jointCoords);
+    printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
@@ -1875,6 +1791,13 @@ void printJointCoords(jointCoords_t& jc)
             //         << "|S: " << jc.Spinex << ", " << jc.Spiney
             //         << ", " << jc.Spinez
          << endl;
+}
+
+void printJumpVector (vector<int> jumpVector) {
+    for(int i = 0; i < jumpVector.size(); i++ ) {
+        cout <<jumpVector[i] << ", ";
+    }
+    cout << endl;
 }
 
 void playContent(gestures_e gesture, bool &finished)

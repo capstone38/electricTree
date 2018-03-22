@@ -43,7 +43,6 @@ enum gestures_e
 };
 
 #define INVALID_PERSONID -1
-
 struct gesture_states_t
 {
     // static gestures begin
@@ -55,6 +54,7 @@ struct gesture_states_t
     } usain_gesture_state;
     int cyclesInState_usain_detecting;
     int cyclesInState_usain_lost;
+    int usain_count = 0;
 
     enum tpose_gesture_e
     {
@@ -64,14 +64,7 @@ struct gesture_states_t
     } tpose_gesture_state;
     int cyclesInState_tpose_detecting;
     int cyclesInState_tpose_lost;
-
-
-    enum o_gesture_e
-    {
-        O_INIT,
-        O_DETECTING
-    } o_gesture_state;
-    int cyclesInState_o;
+    int tpose_count = 0;
 
     enum victory_gesture_e
     {
@@ -81,8 +74,9 @@ struct gesture_states_t
     } victory_gesture_state;
     int cyclesInState_victory_detecting;
     int cyclesInState_victory_lost;
+    int victory_count = 0;
 
-    enum powerpose_gesture_e
+    enum powerpose_gesture_e    //rename to flexing
     {
         POWERPOSE_INIT,
         POWERPOSE_DETECTING,
@@ -90,6 +84,7 @@ struct gesture_states_t
     } powerpose_gesture_state;
     int cyclesInState_powerpose_detecting;
     int cyclesInState_powerpose_lost;
+    int powerpose_count = 0;
 
     enum pointing_trf_gesture_e
     {
@@ -99,6 +94,7 @@ struct gesture_states_t
     } pointing_trf_gesture_state;
     int cyclesInState_pointing_trf_detecting;
     int cyclesInState_pointing_trf_lost;
+    int trf_count;
 
     enum pointing_rf_gesture_e
     {
@@ -108,6 +104,7 @@ struct gesture_states_t
     } pointing_rf_gesture_state;
     int cyclesInState_pointing_rf_detecting;
     int cyclesInState_pointing_rf_lost;
+    int rf_count;
 
     enum pointing_tlf_gesture_e
     {
@@ -117,6 +114,7 @@ struct gesture_states_t
     } pointing_tlf_gesture_state;
     int cyclesInState_pointing_tlf_detecting;
     int cyclesInState_pointing_tlf_lost;
+    int tlf_count;
 
     enum pointing_lf_gesture_e
     {
@@ -126,6 +124,7 @@ struct gesture_states_t
     } pointing_lf_gesture_state;
     int cyclesInState_pointing_lf_detecting;
     int cyclesInState_pointing_lf_lost;
+    int lf_count;
 
     enum pointing_tr_gesture_e
     {
@@ -135,6 +134,7 @@ struct gesture_states_t
     } pointing_tr_gesture_state;
     int cyclesInState_pointing_tr_detecting;
     int cyclesInState_pointing_tr_lost;
+    int tr_count;
 
     enum pointing_r_gesture_e
     {
@@ -144,6 +144,7 @@ struct gesture_states_t
     } pointing_r_gesture_state;
     int cyclesInState_pointing_r_detecting;
     int cyclesInState_pointing_r_lost;
+    int r_count;
 
     enum pointing_tl_gesture_e
     {
@@ -153,6 +154,7 @@ struct gesture_states_t
     } pointing_tl_gesture_state;
     int cyclesInState_pointing_tl_detecting;
     int cyclesInState_pointing_tl_lost;
+    int tl_count;
 
     enum pointing_l_gesture_e
     {
@@ -162,6 +164,7 @@ struct gesture_states_t
     } pointing_l_gesture_state;
     int cyclesInState_pointing_l_detecting;
     int cyclesInState_pointing_l_lost;
+    int l_count;
 
     // dynamic gestures begin
 
@@ -174,6 +177,7 @@ struct gesture_states_t
         FLYING_MIN_2
     } flying_gesture_state;
     int cyclesInState_flying;
+    int flying_count;
 
     enum waving_r_gesture_e
     {
@@ -184,6 +188,7 @@ struct gesture_states_t
         WAVING_R_MIN_2
     } waving_r_gesture_state;
     int cyclesInState_waving_r;
+    int waving_r_count;
 
     enum waving_l_gesture_e
     {
@@ -194,6 +199,7 @@ struct gesture_states_t
         WAVING_L_MIN_2
     } waving_l_gesture_state;
     int cyclesInState_waving_l;
+    int waving_l_count;
 
     enum jumping_gesture_e
     {
@@ -202,6 +208,7 @@ struct gesture_states_t
         JUMPING_MIN,
     } jumping_gesture_state;
     int cyclesInState_jumping;
+    int jumping_count;
 
     enum running_gesture_e
     {
@@ -212,6 +219,8 @@ struct gesture_states_t
         RUNNING_MIN_2
     } running_gesture_state;
     int cyclesInState_running;
+    int running_count;
+
 };
 
 // gesture detection timeouts (units are frames)
@@ -219,18 +228,15 @@ struct gesture_states_t
 #define STATIC_POSE_LOST_TIMEOUT 5
 #define FLYING_TIMEOUT 20
 #define WAVING_TIMEOUT 20
-#define JUMPING_TIMEOUT 20
+#define JUMPING_TIMEOUT 15
 #define RUNNING_TIMEOUT 25
 
 #define GESTURE_CANCEL GESTURE_WAVING_R // update this later if we want a different cancel gesture!!
 
 // variables used for jumping detection
-int jumpHeadPreX;
-int jumpHeadPreY;
-int jumpHeadPreZ;
-int jumpHeadCurrX;
-int jumpHeadCurrY;
-int jumpHeadCurrZ;
+vector<int> jumpVector;
+int jumpCount = 0;
+int jumpStartValue;
 
 struct jointCoords_t
 {
@@ -258,6 +264,7 @@ struct jointCoords_t
 
 gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states);
 void printJointCoords(jointCoords_t &jc);
+void printJumpVector(vector<int> jumpVector);
 void playContent(gestures_e gesture, bool &finished);
 void resetGestureStates(gesture_states_t &gesture_states);
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass);
