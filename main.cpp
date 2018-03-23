@@ -86,7 +86,6 @@ int main(int argc, char** argv)
     int cyclesSpentIdle = 0;
     int numTracked;
     gestures_e gestureDetected = GESTURE_UNDEFINED;
-    bool playbackFinished = false;
     gesture_states_t gesture_states;
     resetGestureStates(gesture_states);
 
@@ -97,6 +96,8 @@ int main(int argc, char** argv)
     jumpHeadPreX = -10000;
     jumpHeadPreY = -10000;
     jumpHeadPreZ = -10000;
+
+    bool shouldCancel = false;
 
 
 
@@ -198,15 +199,15 @@ int main(int argc, char** argv)
                 cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
                 state = STATE_READY;
-               
+
                 {
-                        thread video(playContent, GESTURE_READY, ref(playbackFinished));
-                        video.detach();
+                    thread video(playContent, GESTURE_READY);
+                    video.detach();
                 }
 
-		break;
+                break;
             }
-            else if(cyclesSpentIdle >= SEC_TO_CYCLES(10))
+            else if(cyclesSpentIdle >= SEC_TO_CYCLES(0))
             {
                 // We have idled for 10 seconds. Begin playback of idle video
                 state = STATE_IDLEVIDEO_START;
@@ -230,6 +231,7 @@ int main(int argc, char** argv)
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
+
                     state = STATE_PLAYBACK_START;
                 }
             }
@@ -243,12 +245,12 @@ int main(int argc, char** argv)
 
         case STATE_PLAYBACK_START:
             // Issue system call to playback video content in a detached thread
-            playbackFinished = false;
 
         {
-            thread video(playContent, gestureDetected, ref(playbackFinished));
+            thread video(playContent, gestureDetected);
             video.detach();
         }
+            shouldCancel = false;
 
             state = STATE_PLAYBACK_UNDERWAY;
             break;
@@ -267,34 +269,34 @@ int main(int argc, char** argv)
                 // Implement cancel gesture.
                 if(gestureDetected == GESTURE_CANCEL)
                 {
+                    shouldCancel = true;
                     //system("killall vlc");
-		    playbackFinished = true;
+
                 }
             }
 
 
-            if(playbackFinished)
+            if(currentVideoType() == GESTURE_UNDEFINED || shouldCancel)
             {
                 cout << "playback completed or killed!" << endl;
                 state = STATE_READY;
-		
-    		{
-        		thread video(playContent, GESTURE_READY, ref(playbackFinished));
-        		video.detach();             
+
+                {
+                    thread video(playContent, GESTURE_READY);
+                    video.detach();
                 }
-    
-	    }
-	    break;
+
+            }
+            break;
 
 
         case STATE_IDLEVIDEO_START:
             // Issue system call to playback idle video content in a detached thread
-            playbackFinished = false;
 
-            {
-               thread idlevideo(playContent, GESTURE_IDLE, ref(playbackFinished));
-               idlevideo.detach();
-            }
+        {
+            thread idlevideo(playContent, GESTURE_IDLE);
+            idlevideo.detach();
+        }
 
             state = STATE_IDLEVIDEO_UNDERWAY;
             break;
@@ -307,10 +309,10 @@ int main(int argc, char** argv)
                 state = STATE_IDLE;
                 cyclesSpentIdle = 0;
             }
-            else if(playbackFinished)
+            else if(currentVideoType() == GESTURE_UNDEFINED)
             {
                 cout << "Idle playback completed. Starting new idle video at random" << endl;
-                state = STATE_IDLEVIDEO_START;          
+                state = STATE_IDLEVIDEO_START;
             }
 
             break;
@@ -336,8 +338,8 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
             )
     {
 
-//        cout<< "x: " << centerMass.world.point.x<<endl;
-//        cout<< "z: " << centerMass.world.point.z<<endl<<endl;
+        //        cout<< "x: " << centerMass.world.point.x<<endl;
+        //        cout<< "z: " << centerMass.world.point.z<<endl<<endl;
         return true;
     }
 
@@ -1634,7 +1636,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     {
     case gesture_states.RUNNING_INIT:
         if(/*(RightX >= -40) &&
-                        (RightX <= -10) &&*/
+                                (RightX <= -10) &&*/
                 (RightX >= -110) &&
                 (RightY >= -110) &&
                 (RightY <= -80) &&
@@ -1655,10 +1657,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -10) &&
                 (RightY <= 50) &&
                 (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
-                        (LeftX >= 10) &&
-                        (LeftX <= 40) &&
-                        (LeftY >= -100) &&
-                        (LeftY <= -70)*/)
+                                (LeftX >= 10) &&
+                                (LeftX <= 40) &&
+                                (LeftY >= -100) &&
+                                (LeftY <= -70)*/)
         {
             gesture_states.cyclesInState_running = 0;
             gesture_states.running_gesture_state = gesture_states.RUNNING_MIN_1;
@@ -1676,7 +1678,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     case gesture_states.RUNNING_MIN_1:
         if(/*(RightX >= -40) &&
-                                (RightX <= -10) &&*/
+                                        (RightX <= -10) &&*/
                 (RightX >= -110) &&
                 (RightY >= -110) &&
                 (RightY <= -80) &&
@@ -1705,10 +1707,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -10) &&
                 (RightY <= 50) &&
                 (LeftY < 100)/*  // this is here to prevent detection when user crouches (due to LH giving (0,0,0))
-                        (LeftX >= 10) &&
-                        (LeftX <= 40) &&
-                        (LeftY >= -100) &&
-                        (LeftY <= -70)*/)
+                                (LeftX >= 10) &&
+                                (LeftX <= 40) &&
+                                (LeftY >= -100) &&
+                                (LeftY <= -70)*/)
         {
             cout << "RUNNING GESTURE DETECTED!" << endl;
             gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
@@ -1735,7 +1737,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     {
     case gesture_states.JUMPING_INIT:
         for(int i = 0; i < jumpVector.size(); i++ ) {
-//            cout << "in INIT "<<jumpVector[i] << ", ";
+            //            cout << "in INIT "<<jumpVector[i] << ", ";
         }
         cout << endl;
 
@@ -1764,7 +1766,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
     case gesture_states.JUMPING_MAX:
         for(int i = 0; i < jumpVector.size(); i++ ) {
-//            cout << "in MAX "<<jumpVector[i] << ", ";
+            //            cout << "in MAX "<<jumpVector[i] << ", ";
         }
         cout << endl;
         if(gesture_states.cyclesInState_jumping >= JUMPING_TIMEOUT){
@@ -1860,7 +1862,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     //        break;
     //    }
 
-//        printJointCoords(jointCoords);
+    //        printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
@@ -1883,7 +1885,7 @@ void printJointCoords(jointCoords_t& jc)
          << endl;
 }
 
-void playContent(gestures_e gesture, bool &finished)
+void playContent(gestures_e gesture)
 {
     // Play the specified video in fullscreen mode and close vlc when finished
     // (We should use this in our production code)
@@ -1912,72 +1914,69 @@ void playContent(gestures_e gesture, bool &finished)
     case GESTURE_VICTORY:
         //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/victory.mov");
         title.assign("victory");
-	full_cmd.assign(vlc_cmd + base_path + title + ext);   
-	break;
+        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        break;
     case GESTURE_USAIN:
         //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
         title.assign("bolt");
-	ext.assign(".mov");
-	full_cmd.assign(vlc_cmd + base_path + title + ext);           
-	break;
+        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        break;
     case GESTURE_T:
 
         //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
-        title.assign("bolt");
-	ext.assign(".mov");                                       
-       	full_cmd.assign(vlc_cmd + base_path + title + ext);            
-	break;                                                             
-		case GESTURE_POINTING_TRF:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/toprightforward.mp4");
-                title.assign("toprightforward");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_RF:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/rightforward.mp4");
-                title.assign("rightforward");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_TLF:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleftforward.mp4");
-                title.assign("topleftforward");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_LF:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/leftforward.mp4");
-            	title.assign("leftforward");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-	    case GESTURE_POINTING_TR:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topright.mp4");
-                title.assign("topright");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_R:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/right.mp4");
-                title.assign("right");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_TL:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleft.mp4");
-                title.assign("topleft");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
-            case GESTURE_POINTING_L:
-                //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/left.mp4");
-                title.assign("left");
-		full_cmd.assign(vlc_cmd + base_path + title + ext);
-		break;
+        title.assign("tpose");
+        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        break;
+    case GESTURE_POINTING_TRF:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/toprightforward.mp4");
+        title.assign("toprightforward");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_RF:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/rightforward.mp4");
+        title.assign("rightforward");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_TLF:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleftforward.mp4");
+        title.assign("topleftforward");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_LF:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/leftforward.mp4");
+        title.assign("leftforward");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_TR:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topright.mp4");
+        title.assign("topright");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_R:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/right.mp4");
+        title.assign("right");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_TL:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleft.mp4");
+        title.assign("topleft");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
+    case GESTURE_POINTING_L:
+        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/left.mp4");
+        title.assign("left");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        break;
     case GESTURE_FLYING:
         //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/fly.mov");
         title.assign("fly");
-	ext.assign(".mov");
-	break;
+        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        break;
 
     case GESTURE_IDLE:
         rand_idx = rand() % 3;
         idx.assign(to_string(rand_idx));
         cout << rand_idx << endl;
-        ext.assign(".mp4");
 
         if(rand_idx > 0)
         {
@@ -1993,25 +1992,66 @@ void playContent(gestures_e gesture, bool &finished)
         system(full_cmd.c_str());
         break;
     case GESTURE_READY:
-	title.assign("ready");
-	ext.assign(".mp4");
-	full_cmd.assign(vlc_cmd + base_path + title + ext);
-	
-	system(full_cmd.c_str());
-	break;
+        title.assign("ready");
+        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        cout << "play video in ready" <<endl<<endl;
+        break;
     default:
         //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/test.mov");
         title.assign("test");
-	ext.assign(".mov");
-	break;
+        break;
 
     }
 
-    system(full_cmd.c_str()); 
+    system(full_cmd.c_str());
 
     // Set finished to true. This is a reference so its value will be seen in the main loop.
-    finished = true;
-    cout << "playback completed! " << endl;
+    if(gesture == GESTURE_READY)
+    {
+        cout << "ReAdY" << endl;
+    }
+    else if(gesture == GESTURE_IDLE)
+    {
+        cout << "Idle" << endl;
+    }
+    else
+    {
+        cout << "General" << endl;
+    }
+
+}
+
+gestures_e currentVideoType()
+{
+    FILE *pPipe;
+    pPipe = popen("lsof -wc vlc | awk '$4~\"[0-9]r\" && $5==\"REG\"' | grep -o '[^/]*$'", "r");
+
+    char buf[20];
+
+    int i=0;
+    if(fgets(buf, 20, pPipe) != NULL)
+    {
+        puts(buf);
+    }
+
+    pclose(pPipe);
+
+    if(strstr(buf, "ready") != NULL)
+    {
+        return GESTURE_READY;
+    }
+    else if(strstr(buf, "idle") != NULL)
+    {
+        return GESTURE_IDLE;
+    }
+    else if(strlen(buf) == 0)
+    {
+        return GESTURE_UNDEFINED;
+    }
+    else
+    {
+        return GESTURE_USAIN;
+    }
 }
 
 void resetGestureStates(gesture_states_t &gesture_states)

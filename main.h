@@ -259,9 +259,10 @@ struct jointCoords_t
 
 gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states);
 void printJointCoords(jointCoords_t &jc);
-void playContent(gestures_e gesture, bool &finished);
+void playContent(gestures_e gesture);
 void resetGestureStates(gesture_states_t &gesture_states);
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass);
+gestures_e currentVideoType();
 
 #define VLC_CMD std::string("cvlc -f --play-and-exit --no-video-title-show")
 #define VIDEOS_PATH std::string("file:///home/zac/electricTree/videos/")
