@@ -25,6 +25,7 @@ enum gestures_e
     GESTURE_T,
     GESTURE_VICTORY,
     GESTURE_POWERPOSE,
+    GESTURE_STOP,
     GESTURE_FLYING,
     GESTURE_WAVING_R,
     GESTURE_WAVING_L,
@@ -66,14 +67,6 @@ struct gesture_states_t
     int cyclesInState_tpose_detecting;
     int cyclesInState_tpose_lost;
 
-
-    enum o_gesture_e
-    {
-        O_INIT,
-        O_DETECTING
-    } o_gesture_state;
-    int cyclesInState_o;
-
     enum victory_gesture_e
     {
         VICTORY_INIT,
@@ -91,6 +84,16 @@ struct gesture_states_t
     } powerpose_gesture_state;
     int cyclesInState_powerpose_detecting;
     int cyclesInState_powerpose_lost;
+    int powertest = 0;
+
+    enum stop_gesture_e
+    {
+        STOP_INIT,
+        STOP_DETECTING,
+        STOP_LOST
+    } stop_gesture_state;
+    int cyclesInState_stop_detecting;
+    int cyclesInState_stop_lost;
 
     enum pointing_trf_gesture_e
     {
@@ -217,7 +220,7 @@ struct gesture_states_t
 
 // gesture detection timeouts (units are frames)
 #define STATIC_POSE_DETECTING_TIMEOUT 10
-#define STATIC_POSE_LOST_TIMEOUT 5
+#define STATIC_POSE_LOST_TIMEOUT 10
 #define FLYING_TIMEOUT 20
 #define WAVING_TIMEOUT 20
 #define JUMPING_TIMEOUT 20
@@ -226,12 +229,30 @@ struct gesture_states_t
 #define GESTURE_CANCEL GESTURE_WAVING_R // update this later if we want a different cancel gesture!!
 
 // variables used for jumping detection
-int jumpHeadPreX;
-int jumpHeadPreY;
-int jumpHeadPreZ;
-int jumpHeadCurrX;
-int jumpHeadCurrY;
-int jumpHeadCurrZ;
+//int jumpHeadPreX;
+//int jumpHeadPreY;
+//int jumpHeadPreZ;
+//int jumpHeadCurrX;
+//int jumpHeadCurrY;
+//int jumpHeadCurrZ;
+
+// move declaration to struct for cleaniness
+int powerpose_count;
+int t_count;
+int victory_count;
+int usain_count;
+int stop_count;
+int flying_count;
+int waving_r_count;
+int waving_l_count;
+int pointing_trf_count;
+int pointing_rf_count;
+int pointing_tlf_count;
+int pointing_lf_count;
+int pointing_tr_count;
+int pointing_r_count;
+int pointing_tl_count;
+int pointing_l_count;
 
 struct jointCoords_t
 {
@@ -259,10 +280,17 @@ struct jointCoords_t
 
 gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states);
 void printJointCoords(jointCoords_t &jc);
-void playContent(gestures_e gesture);
+void playContent(gestures_e gesture, bool quit);
 void resetGestureStates(gesture_states_t &gesture_states);
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass);
 gestures_e currentVideoType();
+
+void updateAnalytics(bool update, gesture_states_t &gesture_states);
+string format;  // random strings for formating
+string total;   // "TOTAL:","TODAY_TOTAL_COUNT:", "OVERALL_TOTAL_COUNT:"
+int totalCount;  // "TOTAL: X","TODAY_TOTAL_COUNT: X", "OVERALL_TOTAL_COUNT: X"
+string gesture; // "WAVING_R:", "USAIN:", ...
+int gestureCount;   // "WAVING_R: X", "USAIN: X", ...
 
 #define VLC_CMD std::string("cvlc -f --play-and-exit --no-video-title-show")
 #define VIDEOS_PATH std::string("file:///home/zac/electricTree/videos/")

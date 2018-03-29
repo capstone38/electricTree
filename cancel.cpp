@@ -4,11 +4,10 @@ using namespace boost::interprocess;
 
 int main()
 {
-	    message_queue mq
+    // Shut down properly
+    message_queue mq
             (open_only,
              "etree_message_queue");
-	bool shouldQuit = true;
-	mq.send(&shouldQuit, sizeof(shouldQuit), 0);
-
-
+    bool shouldQuit = true;
+    mq.send(&shouldQuit, sizeof(shouldQuit), 0);
 }

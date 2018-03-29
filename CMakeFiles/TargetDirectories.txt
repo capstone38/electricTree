@@ -1,0 +1,7 @@
+/home/zac/electricTree/CMakeFiles/rebuild_cache.dir
+/home/zac/electricTree/CMakeFiles/install/strip.dir
+/home/zac/electricTree/CMakeFiles/install.dir
+/home/zac/electricTree/CMakeFiles/electricTree.dir
+/home/zac/electricTree/CMakeFiles/install/local.dir
+/home/zac/electricTree/CMakeFiles/list_install_components.dir
+/home/zac/electricTree/CMakeFiles/edit_cache.dir
