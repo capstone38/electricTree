@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/zac/electricTree/main.cpp" "/home/zac/electricTree/CMakeFiles/electricTree.dir/main.cpp.o"
+  "/home/capstone38/Desktop/electricTree/main.cpp" "/home/capstone38/Desktop/electricTree/CMakeFiles/electricTree.dir/main.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
@@ -20,8 +20,8 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "/usr/include/librealsense/object_recognition"
   "/usr/include/librealsense/slam"
   "/usr/include/boost/interprocess"
-  "/home/zac/Electrictree/realsense_samples/samples/common/console_display"
-  "/home/zac/Electrictree/realsense_samples/samples/common/utils"
+  "/home/capstone38/Desktop/realsense/realsense_samples/samples/common/console_display"
+  "/home/capstone38/Desktop/realsense/realsense_samples/samples/common/utils"
   )
 
 # Targets to which this target links.

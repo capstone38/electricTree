@@ -6,5 +6,5 @@ CXX_FLAGS =  -O3 -Wall -fmessage-length=0 --std=c++11 -pthread -fPIC -std=c++0x 
 
 CXX_DEFINES = -DPERSON_TRACKING_DATA_FILES=\"/usr/share/librealsense/pt/data/\"
 
-CXX_INCLUDES = -I/usr/include/librealsense -I/usr/include/librealsense/pt -I/usr/include/librealsense/object_recognition -I/usr/include/librealsense/slam -I/usr/include/boost/interprocess -I/home/zac/Electrictree/realsense_samples/samples/common/console_display -I/home/zac/Electrictree/realsense_samples/samples/common/utils 
+CXX_INCLUDES = -I/usr/include/librealsense -I/usr/include/librealsense/pt -I/usr/include/librealsense/object_recognition -I/usr/include/librealsense/slam -I/usr/include/boost/interprocess -I/home/capstone38/Desktop/realsense/realsense_samples/samples/common/console_display -I/home/capstone38/Desktop/realsense/realsense_samples/samples/common/utils 
 

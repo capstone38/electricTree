@@ -2,6 +2,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/electricTree.dir/main.cpp.o"
   "electricTree.pdb"
   "electricTree"
+  "electricTree.pdb"
+  "CMakeFiles/CMakeRelink.dir/electricTree"
 )
 
 # Per-language clean rules from dependency scanning.

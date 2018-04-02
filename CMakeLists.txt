@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8.9)
 project(${SAMPLE_PREFIX}electricTree)
 
 # set path
-set(COMMON_DIR ~/Electrictree/realsense_samples/samples/common)
+set(COMMON_DIR /home/capstone38/Desktop/realsense/realsense_samples/samples/common)
 set(CONSOLE_DISPLAY_DIR ${COMMON_DIR}/console_display)
 set(COMMON_UTILS_DIR ${COMMON_DIR}/utils)
 

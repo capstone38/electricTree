@@ -33,8 +33,8 @@ int jumpStartValue;
 
 bool analyticsOn = true;
 int result; // file renaming and removing error checking
-char filename[] = "/home/zac/electricTree/analytics.txt";
-char temp_filename[] = "/home/zac/electricTree/temp_analytics.txt";
+char filename[] = "/home/capstone38/Desktop/electricTree/analytics.txt";
+char temp_filename[] = "/home/capstone38/Desktop/electricTree/temp_analytics.txt";
 
 int main(int argc, char** argv)
 {
@@ -238,7 +238,7 @@ int main(int argc, char** argv)
                 cout << "found someone!" << endl;
                 cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
-                if(cyclesSpentDetected >= SEC_TO_CYCLES(3)) {
+                if(cyclesSpentDetected >= SEC_TO_CYCLES(0.5)) {
                     state = STATE_READY;
 
                     {
@@ -264,6 +264,12 @@ int main(int argc, char** argv)
         case STATE_READY:
             // Track skeleton joints of person in centre,
             // or go back to idle if person has left centre
+
+            if(currentVideoType() == GESTURE_UNDEFINED)
+            {
+                thread video(playContent, GESTURE_READY, shouldQuit);
+                video.detach();
+            }
 
             if(pid_in_center != INVALID_PERSONID)
             {
@@ -1752,7 +1758,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 //                (LeftX >= 0) &&
 //                (LeftX <= 50) &&
 //                (LeftY >= 0) &&
-//                (LeftY <= 40))
+//                (LeftY <= 40))Idle
 //        {
 //            gesture_states.cyclesInState_running = 0;
 //            gesture_states.running_gesture_state = gesture_states.RUNNING_MAX_1;
@@ -1999,10 +2005,10 @@ void playContent(gestures_e gesture, bool quit)
 
     // Play the specified video in fullscreen mode and close vlc when finished
     // (We should use this in our production code)
-    //    system("cvlc -f --play-and-exit file:///home/zac/electricTree/videos/test.mov");
+    //    system("cvlc -f --play-and-exit file:////home/capstone38/Desktop/electricTree/videos/test.mov");
 
     // Play the specified video on a loop (useful for testing cancel gesture)
-    //system("cvlc -R file:///home/zac/electricTree/videos/test.mov");
+    //system("cvlc -R file:////home/capstone38/Desktop/electricTree/videos/test.mov");
     int rand_idx;
 
     // uncomment this one to get fullscreen:
@@ -2011,7 +2017,7 @@ void playContent(gestures_e gesture, bool quit)
 
 
 //    string vlc_cmd ("cvlc --one-instance --no-video-title-show ");
-    string base_path ("file:///home/zac/electricTree/videos/");
+    string base_path ("file:////home/capstone38/Desktop/electricTree/videos/");
 
     string title;
     string idx (to_string(rand_idx));
@@ -2023,19 +2029,19 @@ void playContent(gestures_e gesture, bool quit)
     switch (gesture)
     {
     case GESTURE_VICTORY:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/victory.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/victory.mov");
         title.assign("victory");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         victory_count++;
         break;
     case GESTURE_USAIN:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("bolt");
         full_cmd.assign(vlc_cmd + base_path + title + ext2);
         usain_count++;
         break;
     case GESTURE_T:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/bolt.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("tpose");
         full_cmd.assign(vlc_cmd + base_path + title + ext2);
         t_count++;
@@ -2047,67 +2053,67 @@ void playContent(gestures_e gesture, bool quit)
         cout << "POWER POSE COUNT: " << powerpose_count << endl;
         break;
     case GESTURE_STOP:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/fly.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         stop_count++;
         break;
     case GESTURE_POINTING_TRF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/toprightforward.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/toprightforward.mp4");
         title.assign("toprightforward");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_trf_count++;
         break;
     case GESTURE_POINTING_RF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/rightforward.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/rightforward.mp4");
         title.assign("rightforward");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_rf_count++;
         break;
     case GESTURE_POINTING_TLF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleftforward.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleftforward.mp4");
         title.assign("topleftforward");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_tlf_count++;
         break;
     case GESTURE_POINTING_LF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/leftforward.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/leftforward.mp4");
         title.assign("leftforward");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_lf_count++;
         break;
     case GESTURE_POINTING_TR:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topright.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topright.mp4");
         title.assign("topright");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_tr_count++;
         break;
     case GESTURE_POINTING_R:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/right.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/right.mp4");
         title.assign("right");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_r_count++;
         break;
     case GESTURE_POINTING_TL:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/topleft.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleft.mp4");
         title.assign("topleft");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_tl_count++;
         break;
     case GESTURE_POINTING_L:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/left.mp4");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/left.mp4");
         title.assign("left");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         pointing_l_count++;
         break;
     case GESTURE_FLYING:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/fly.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         flying_count++;
         break;
     case GESTURE_WAVING_L:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/fly.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
         full_cmd.assign(vlc_cmd + base_path + title + ext);
         waving_l_count++;
@@ -2129,17 +2135,15 @@ void playContent(gestures_e gesture, bool quit)
             full_cmd.assign(vlc_cmd + base_path + title + ext);
         }
 
-//        if(!quit) {
-//            system(full_cmd.c_str());
-//        }
         break;
     case GESTURE_READY:
         title.assign("ready");
+        //vlc_cmd.assign("cvlc -f -R --one-instance --no-video-title-show ");
         full_cmd.assign(vlc_cmd + base_path + title + ext2);
         cout << "play video in ready" <<endl<<endl;
         break;
     default:
-        system("cvlc -f --play-and-exit --no-video-title-show file:///home/zac/electricTree/videos/test.mov");
+        system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/test.mov");
         title.assign("test");
         full_cmd.assign(vlc_cmd + base_path + title + ext2);
         break;
@@ -2168,18 +2172,22 @@ void playContent(gestures_e gesture, bool quit)
 
 gestures_e currentVideoType()
 {
-    FILE *pPipe;
-    pPipe = popen("lsof -wc vlc | awk '$4~\"[0-9]r\" && $5==\"REG\"' | grep -o '[^/]*$'", "r");
-
     char buf[20];
 
-    int i=0;
-    if(fgets(buf, 20, pPipe) != NULL)
+    do
     {
-        puts(buf);
-    }
+        FILE *pPipe;
+        pPipe = popen("lsof -wc vlc | awk '$4~\"[0-9]r\" && $5==\"REG\"' | grep -o '[^/]*$'", "r");
 
-    pclose(pPipe);
+
+        if(fgets(buf, 20, pPipe) != NULL)
+        {
+            puts(buf);
+        }
+
+        pclose(pPipe);
+    }
+    while(strstr(buf, "maps") != NULL);
 
     if(strstr(buf, "ready") != NULL)
     {
@@ -2189,13 +2197,16 @@ gestures_e currentVideoType()
     {
         return GESTURE_IDLE;
     }
-    else if(strlen(buf) == 0)
+    //else if(strlen(buf) == 0)
+    else if(strstr(buf, "mov") != NULL || strstr(buf, "mp4") != NULL)
     {
-        return GESTURE_UNDEFINED;
+                cout<<"buf: "<<buf<<endl;
+                return GESTURE_USAIN;
     }
     else
     {
-        return GESTURE_USAIN;
+        cout<<"undefined"<<endl<<endl;
+        return GESTURE_UNDEFINED;
     }
 }
 
