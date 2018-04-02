@@ -238,17 +238,12 @@ int main(int argc, char** argv)
                 cout << "found someone!" << endl;
                 cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
-                if(cyclesSpentDetected >= SEC_TO_CYCLES(0.5)) {
-                    state = STATE_READY;
-
-                    {
-                        thread video(playContent, GESTURE_READY, shouldQuit);
-                        video.detach();
-                    }
-                    break;
-                } else {
-                    cyclesSpentDetected++;
+                {
+                    thread video(playContent, GESTURE_READY, shouldQuit);
+                    video.detach();
                 }
+
+                state = STATE_READY;
             }
             else if(cyclesSpentIdle >= SEC_TO_CYCLES(0))
             {
@@ -264,6 +259,8 @@ int main(int argc, char** argv)
         case STATE_READY:
             // Track skeleton joints of person in centre,
             // or go back to idle if person has left centre
+
+            cout << "In ready state!" << endl;
 
             if(currentVideoType() == GESTURE_UNDEFINED)
             {
@@ -346,6 +343,7 @@ int main(int argc, char** argv)
             thread idlevideo(playContent, GESTURE_IDLE, shouldQuit);
             idlevideo.detach();
         }
+            cyclesSpentDetected = 0;
 
             state = STATE_IDLEVIDEO_UNDERWAY;
             break;
@@ -353,12 +351,23 @@ int main(int argc, char** argv)
         case STATE_IDLEVIDEO_UNDERWAY:
             if(pid_in_center != INVALID_PERSONID)
             {
-                cout << "Person detected during idle content playback!" << endl;
+                if(cyclesSpentDetected >= SEC_TO_CYCLES(0.5)) {
+                    cout << "Person detected during idle content playback!" << endl;
 
-                state = STATE_IDLE;
-                cyclesSpentIdle = 0;
+                    state = STATE_IDLE;
+                    cyclesSpentIdle = 0;
+                    break;
+                } else {
+                    cyclesSpentDetected++;
+                }
             }
-            else if(currentVideoType() == GESTURE_UNDEFINED)
+            else
+            {
+                cyclesSpentDetected = 0;
+            }
+
+
+            if(currentVideoType() == GESTURE_UNDEFINED)
             {
                 cout << "Idle playback completed. Starting new idle video at random" << endl;
                 state = STATE_IDLEVIDEO_START;
