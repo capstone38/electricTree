@@ -294,5 +294,6 @@ int gestureCount;   // "WAVING_R: X", "USAIN: X", ...
 
 #define VLC_CMD std::string("cvlc -f --play-and-exit --no-video-title-show")
 #define VIDEOS_PATH std::string("file:///home/zac/electricTree/videos/")
+#define DEFAULT_VIDEO "/home/capstone38/Desktop/electricTree/default.mp4"
 
 #endif // MAIN_H

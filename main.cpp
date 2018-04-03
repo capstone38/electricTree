@@ -49,16 +49,75 @@ int main(int argc, char** argv)
     rs_context *ctx = rs_create_context(RS_API_VERSION, 0);
     rs_device *camera = rs_get_device(ctx, 0, 0);
 
-    cout << "Enabled: " << rs_get_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0) << " || ";
+    cout << "Enabled BEFORE: " << rs_get_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0) << endl;
 
-//    rs_set_device_option(camera, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE, 1, 0);
-    rs_set_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1, 0);
+//    rs_set_device_option(camera, RS_OPTION_R200_EMITTER_ENABLED, 1, 0);
+
+    rs_set_device_option(camera, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE, 1, 0);
+//    rs_set_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 1, 0);
+
+    cout << "Enabled AFTER: " << rs_get_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0) << endl;
+
+    cout << "GAIN BEFORE: " << rs_get_device_option(camera, RS_OPTION_R200_LR_GAIN, 0) << " || ";
+    cout << "EXPOSURE BEFORE: " << rs_get_device_option(camera, RS_OPTION_R200_LR_EXPOSURE, 0) << endl;
+
 
 //    rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 100, 0); //400
-//    rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 7, 0); //164
+//    rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 160, 0); //164
 
-//    rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 1600, 0); //512 needs auto exposure enabled
+    cout << "Enabled AFTER AFTER: " << rs_get_device_option(camera, RS_OPTION_R200_LR_AUTO_EXPOSURE_ENABLED, 0) << " || ";
+
+    cout << "GAIN AFTER: " << rs_get_device_option(camera, RS_OPTION_R200_LR_GAIN, 0) << " || ";
+    cout << "EXPOSURE AFTER: " << rs_get_device_option(camera, RS_OPTION_R200_LR_EXPOSURE, 0) << endl;
+
+//    rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 1806, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT  , 6, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT  , 34, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD  , 246, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD  , 0, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD  , 623, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD  , 0, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD  , 24, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD  , 33, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD  , 0, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD  , 2047, 0); //400
+
+        rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 100, 0); //400
+        rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 7, 0); //164
+
+//    rs_set_device_option(camera, RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_BRIGHTNESS  , 62, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_CONTRAST  , 38, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE  , 1, 0); //400
+
+//    rs_set_device_option(camera, RS_OPTION_COLOR_GAIN  , 88, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_GAMMA  , 180, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_HUE  , -1018, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_SATURATION  , 87, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_SHARPNESS  , 7, 0); //400
+//    rs_set_device_option(camera, RS_OPTION_COLOR_WHITE_BALANCE  , 2981, 0); //400
+
+
+//    rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 3000, 0); //512 needs auto exposure enabled
 //    rs_set_device_option(camera, RS_OPTION_R200_EMITTER_ENABLED, 1, 0);
+
+    rs_option options[10];
+
+    options[0] = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
+    options[1] = RS_OPTION_COLOR_BRIGHTNESS;
+    options[2] = RS_OPTION_COLOR_CONTRAST;
+    options[3] = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
+    options[4] = RS_OPTION_COLOR_GAIN;
+    options[5] = RS_OPTION_COLOR_GAMMA;
+    options[6] = RS_OPTION_COLOR_HUE;
+    options[7] = RS_OPTION_COLOR_SATURATION;
+    options[8] = RS_OPTION_COLOR_SHARPNESS;
+    options[9] = RS_OPTION_COLOR_WHITE_BALANCE;
+
+
+    rs_reset_device_options_to_default(camera, options, 10, 0);
+
+
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -2022,11 +2081,13 @@ void playContent(gestures_e gesture, bool quit)
 
     // uncomment this one to get fullscreen:
 //    string vlc_cmd ("cvlc -f --one-instance --no-video-title-show ");
-    string vlc_cmd ("cvlc -f --one-instance --no-video-title-show ");
+    string vlc_cmd ("cvlc -f --one-instance --no-video-title-show file:///");
 
 
 //    string vlc_cmd ("cvlc --one-instance --no-video-title-show ");
-    string base_path ("file:////home/capstone38/Desktop/electricTree/videos/");
+    string base_path ("/home/capstone38/Desktop/electricTree/videos/");
+
+    string default_video(DEFAULT_VIDEO);
 
     string title;
     string idx (to_string(rand_idx));
@@ -2040,128 +2101,151 @@ void playContent(gestures_e gesture, bool quit)
     case GESTURE_VICTORY:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/victory.mov");
         title.assign("victory");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         victory_count++;
         break;
     case GESTURE_USAIN:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("bolt");
-        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext2);
         usain_count++;
         break;
     case GESTURE_T:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("tpose");
-        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext2);
         t_count++;
         break;
     case GESTURE_POWERPOSE:
         title.assign("flexing");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         powerpose_count++;
         cout << "POWER POSE COUNT: " << powerpose_count << endl;
         break;
     case GESTURE_STOP:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         stop_count++;
         break;
     case GESTURE_POINTING_TRF:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/toprightforward.mp4");
         title.assign("toprightforward");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_trf_count++;
         break;
     case GESTURE_POINTING_RF:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/rightforward.mp4");
         title.assign("rightforward");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_rf_count++;
         break;
     case GESTURE_POINTING_TLF:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleftforward.mp4");
         title.assign("topleftforward");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_tlf_count++;
         break;
     case GESTURE_POINTING_LF:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/leftforward.mp4");
         title.assign("leftforward");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_lf_count++;
         break;
     case GESTURE_POINTING_TR:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topright.mp4");
         title.assign("topright");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_tr_count++;
         break;
     case GESTURE_POINTING_R:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/right.mp4");
         title.assign("right");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_r_count++;
         break;
     case GESTURE_POINTING_TL:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleft.mp4");
         title.assign("topleft");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_tl_count++;
         break;
     case GESTURE_POINTING_L:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/left.mp4");
         title.assign("left");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         pointing_l_count++;
         break;
     case GESTURE_FLYING:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         flying_count++;
         break;
     case GESTURE_WAVING_L:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
-        full_cmd.assign(vlc_cmd + base_path + title + ext);
+        full_cmd.assign(base_path + title + ext);
         waving_l_count++;
         break;
 
     case GESTURE_IDLE:
-        rand_idx = rand() % 3;
+        rand_idx = rand() % 6;
         idx.assign(to_string(rand_idx));
         //cout << rand_idx << endl;
 
         if(rand_idx > 0)
         {
             title.assign("idle-");
-            full_cmd.assign(vlc_cmd + base_path + title + idx + ext);
+            full_cmd.assign(base_path + title + idx + ext);
         }
         else
         {
             title.assign("idle");
-            full_cmd.assign(vlc_cmd + base_path + title + ext);
+            full_cmd.assign(base_path + title + ext);
         }
 
         break;
     case GESTURE_READY:
         title.assign("ready");
         //vlc_cmd.assign("cvlc -f -R --one-instance --no-video-title-show ");
-        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext2);
         cout << "play video in ready" <<endl<<endl;
         break;
     default:
         system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/test.mov");
         title.assign("test");
-        full_cmd.assign(vlc_cmd + base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext2);
         break;
 
     }
 
-    if(!quit) {
-        system(full_cmd.c_str());
+
+    bool good = false;
+    if(FILE *file = fopen(full_cmd.c_str(), "r"))
+    {
+        fclose(file);
+        good = true;
     }
+
+    string valid_video_cmd(vlc_cmd+full_cmd);
+    string default_video_cmd(vlc_cmd+default_video);
+
+    if(!quit) {
+        //if(file != NULL)
+        if(good)
+        {
+            cout << "file found " << full_cmd << endl;
+            system(valid_video_cmd.c_str());
+        }
+        else
+        {
+
+            cout << "file not found " << full_cmd << endl;
+            system(default_video_cmd.c_str());
+        }
+    }
+
 
     // Set finished to true. This is a reference so its value will be seen in the main loop.
     if(gesture == GESTURE_READY)

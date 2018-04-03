@@ -6784,3 +6784,14 @@ enabling: stream:COLOR, 320x240x30, format:RGB8
 
 -------- Press Esc key to exit --------
 
+Enabled BEFORE: 0
+Enabled AFTER: 1
+GAIN BEFORE: 400 || EXPOSURE BEFORE: 164
+Enabled AFTER AFTER: 1 || GAIN AFTER: 400 || EXPOSURE AFTER: 164
+
+enabling: stream:DEPTH, 320x240x30, format:Z16
+
+enabling: stream:COLOR, 320x240x30, format:RGB8
+
+-------- Press Esc key to exit --------
+
