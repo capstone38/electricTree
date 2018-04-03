@@ -284,6 +284,7 @@ void playContent(gestures_e gesture, bool quit);
 void resetGestureStates(gesture_states_t &gesture_states);
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass);
 gestures_e currentVideoType();
+void updateNumVideos(int *numVideos);
 
 void updateAnalytics(bool update, gesture_states_t &gesture_states);
 string format;  // random strings for formating

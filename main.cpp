@@ -36,6 +36,8 @@ int result; // file renaming and removing error checking
 char filename[] = "/home/capstone38/Desktop/electricTree/analytics.txt";
 char temp_filename[] = "/home/capstone38/Desktop/electricTree/temp_analytics.txt";
 
+int numVideos[GESTURE_UNDEFINED];
+
 int main(int argc, char** argv)
 {
     pt_utils pt_utils;
@@ -118,6 +120,7 @@ int main(int argc, char** argv)
     rs_reset_device_options_to_default(camera, options, 10, 0);
 
 
+    updateNumVideos(numVideos);
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -2095,6 +2098,14 @@ void playContent(gestures_e gesture, bool quit)
     string ext2 (".mov");
 
     string full_cmd;
+    string full_cmd2;
+
+    cout << numVideos[gesture] << endl;
+
+    if(numVideos[gesture] != 0)
+    {
+        rand_idx = rand() % (numVideos[gesture]);
+    }
 
     switch (gesture)
     {
@@ -2190,18 +2201,22 @@ void playContent(gestures_e gesture, bool quit)
         break;
 
     case GESTURE_IDLE:
-        rand_idx = rand() % 6;
+
+        cout << "Playing idle vid number " << rand_idx << endl;
         idx.assign(to_string(rand_idx));
         //cout << rand_idx << endl;
 
         if(rand_idx > 0)
         {
-            title.assign("idle-");
-            full_cmd.assign(base_path + title + idx + ext);
+            title.assign("idle");
+            ext.assign("\).mp4");
+            full_cmd.assign(base_path + title + "\(" + idx + ext);
+            full_cmd2.assign(base_path + title + "\\(" + idx + "\\" + ext);
         }
         else
         {
             title.assign("idle");
+            ext.assign(".mp4");
             full_cmd.assign(base_path + title + ext);
         }
 
@@ -2228,11 +2243,12 @@ void playContent(gestures_e gesture, bool quit)
         good = true;
     }
 
-    string valid_video_cmd(vlc_cmd+full_cmd);
+    string valid_video_cmd(vlc_cmd+full_cmd2);
     string default_video_cmd(vlc_cmd+default_video);
 
     if(!quit) {
         //if(file != NULL)
+        //if(good)
         if(good)
         {
             cout << "file found " << full_cmd << endl;
@@ -2435,6 +2451,78 @@ void updateAnalytics(bool update, gesture_states_t &gesture_states) {
         cout << endl << "UPDATED ANALYTICS!" << endl;
         cout << endl << "***************************" << endl;
     }
+}
+
+void updateNumVideos(int *numVideos)
+{
+    /*GESTURE_USAIN=0,
+    GESTURE_T,
+    GESTURE_VICTORY,
+    GESTURE_POWERPOSE,
+    GESTURE_STOP,
+    GESTURE_FLYING,
+    GESTURE_WAVING_R,
+    GESTURE_WAVING_L,
+    GESTURE_JUMPING,
+    GESTURE_POINTING_TRF,
+    GESTURE_POINTING_RF,
+    GESTURE_POINTING_TLF,
+    GESTURE_POINTING_LF,
+    GESTURE_POINTING_TR,
+    GESTURE_POINTING_R,
+    GESTURE_POINTING_TL,
+    GESTURE_POINTING_L,
+    GESTURE_RUNNING,
+    GESTURE_IDLE,
+    GESTURE_READY,
+    GESTURE_UNDEFINED*/
+
+    string base_path("/home/capstone38/Desktop/electricTree/videos/");
+    string title;
+    string ext;
+    string full_cmd;
+
+    int idx = 0;
+    bool good = false;
+    do
+    {
+        string id(to_string(idx));
+        //cout << rand_idx << endl;
+
+        if(idx > 0)
+        {
+            title.assign("idle\(");
+            ext.assign("\).mp4");
+            full_cmd.assign(base_path + title + id + ext);
+        }
+        else
+        {
+            title.assign("idle");
+            ext.assign(".mp4");
+            full_cmd.assign(base_path + title + ext);
+        }
+
+
+
+        if(FILE *file = fopen(full_cmd.c_str(), "r"))
+        {
+            fclose(file);
+            good = true;
+        }
+        else
+        {
+            good = false;
+        }
+
+        cout << full_cmd << good << endl;
+
+        idx++;
+    } while(good == true);
+    idx--;
+
+    numVideos[GESTURE_IDLE] = idx;
+
+    cout << "abc found " << idx << " idle videos" << endl;
 }
 
 void resetGestureStates(gesture_states_t &gesture_states)
