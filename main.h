@@ -221,7 +221,7 @@ struct gesture_states_t
 // gesture detection timeouts (units are frames)
 #define STATIC_POSE_DETECTING_TIMEOUT 10
 #define STATIC_POSE_LOST_TIMEOUT 10
-#define FLYING_TIMEOUT 20
+#define FLYING_TIMEOUT 30
 #define WAVING_TIMEOUT 20
 #define JUMPING_TIMEOUT 20
 #define RUNNING_TIMEOUT 25

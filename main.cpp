@@ -31,7 +31,7 @@ int jumpCount = 0;
 int jumpStartValue;
 
 
-bool analyticsOn = true;
+bool analyticsOn = false;
 int result; // file renaming and removing error checking
 char filename[] = "/home/capstone38/Desktop/electricTree/analytics.txt";
 char temp_filename[] = "/home/capstone38/Desktop/electricTree/temp_analytics.txt";
@@ -82,8 +82,8 @@ int main(int argc, char** argv)
 //    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD  , 0, 0); //400
 //    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD  , 2047, 0); //400
 
-        rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 100, 0); //400
-        rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 7, 0); //164
+        rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 400, 0); //400
+        rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 164, 0); //164
 
 //    rs_set_device_option(camera, RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0, 0); //400
 //    rs_set_device_option(camera, RS_OPTION_COLOR_BRIGHTNESS  , 62, 0); //400
@@ -101,21 +101,33 @@ int main(int argc, char** argv)
 //    rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 3000, 0); //512 needs auto exposure enabled
 //    rs_set_device_option(camera, RS_OPTION_R200_EMITTER_ENABLED, 1, 0);
 
-    rs_option options[10];
+    rs_option options[11];
 
-    options[0] = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
-    options[1] = RS_OPTION_COLOR_BRIGHTNESS;
-    options[2] = RS_OPTION_COLOR_CONTRAST;
-    options[3] = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
-    options[4] = RS_OPTION_COLOR_GAIN;
-    options[5] = RS_OPTION_COLOR_GAMMA;
-    options[6] = RS_OPTION_COLOR_HUE;
-    options[7] = RS_OPTION_COLOR_SATURATION;
-    options[8] = RS_OPTION_COLOR_SHARPNESS;
-    options[9] = RS_OPTION_COLOR_WHITE_BALANCE;
+//    options[0] = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
+//    options[1] = RS_OPTION_COLOR_BRIGHTNESS;
+//    options[2] = RS_OPTION_COLOR_CONTRAST;
+//    options[3] = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
+//    options[4] = RS_OPTION_COLOR_GAIN;
+//    options[5] = RS_OPTION_COLOR_GAMMA;
+//    options[6] = RS_OPTION_COLOR_HUE;
+//    options[7] = RS_OPTION_COLOR_SATURATION;
+//    options[8] = RS_OPTION_COLOR_SHARPNESS;
+//    options[9] = RS_OPTION_COLOR_WHITE_BALANCE;
+
+    options[0] = RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT;
+    options[1] = RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT;
+    options[2] = RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT;
+    options[3] = RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD;
+    options[4] = RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD;
+    options[5] = RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD;
+    options[6] = RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD;
+    options[7] = RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD;
+    options[8] = RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD;
+    options[9] = RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD;
+    options[10] = RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD;
 
 
-    rs_reset_device_options_to_default(camera, options, 10, 0);
+    rs_reset_device_options_to_default(camera, options, 11, 0);
 
 
 
@@ -448,9 +460,9 @@ int main(int argc, char** argv)
 
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass)
 {
-    if(     centerMass.world.point.x >= 0.0 &&
+    if(     centerMass.world.point.x >= -0.05 &&
             centerMass.world.point.z >= 1.5 &&
-            centerMass.world.point.x <= 0.2 &&
+            centerMass.world.point.x <= 0.25 &&
             centerMass.world.point.z <= 2.4
             )
     {
@@ -625,13 +637,13 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         //                )
         //        {
         if( (LeftX <= 100) &&
-                (LeftX >= 45 ) &&
-                (LeftY <= 90) &&
+                (LeftX >= 35 ) &&
+                (LeftY <= 100) &&
                 (LeftY >= 45) &&
                 (RightX <= -30) &&
-                (RightX >= -80 ) &&
+                (RightX >= -70 ) &&
                 (RightY <= 100) &&
-                (RightY >= 50)
+                (RightY >= 40)
                 )
         {
             gesture_states.victory_gesture_state = gesture_states.VICTORY_DETECTING;
@@ -642,13 +654,13 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
     case gesture_states.VICTORY_DETECTING:
         if( (LeftX <= 100) &&
-                (LeftX >= 45 ) &&
-                (LeftY <= 90) &&
+                (LeftX >= 35 ) &&
+                (LeftY <= 100) &&
                 (LeftY >= 45) &&
                 (RightX <= -30) &&
-                (RightX >= -80 ) &&
+                (RightX >= -70 ) &&
                 (RightY <= 100) &&
-                (RightY >= 50)
+                (RightY >= 40)
                 )
         {
             gesture_states.cyclesInState_victory_detecting++;
@@ -672,14 +684,23 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     case gesture_states.VICTORY_LOST:
         //cout << "LOST VICTORY POSE " << gesture_states.cyclesInState_vpose_lost << " CYCLES" << endl;
+//        if( (LeftX <= 100) &&
+//                (LeftX >= 45 ) &&
+//                (LeftY <= 90) &&
+//                (LeftY >= 45) &&
+//                (RightX <= -30) &&
+//                (RightX >= -80 ) &&
+//                (RightY <= 100) &&
+//                (RightY >= 50)
+//                )
         if( (LeftX <= 100) &&
-                (LeftX >= 45 ) &&
-                (LeftY <= 90) &&
+                (LeftX >= 35 ) &&
+                (LeftY <= 100) &&
                 (LeftY >= 45) &&
                 (RightX <= -30) &&
-                (RightX >= -80 ) &&
+                (RightX >= -70 ) &&
                 (RightY <= 100) &&
-                (RightY >= 50)
+                (RightY >= 40)
                 )
         {
             gesture_states.victory_gesture_state = gesture_states.VICTORY_DETECTING;
@@ -1569,9 +1590,9 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     case gesture_states.FLYING_MIN_1:
         if((LeftY >= -20) &&
-                (LeftY <= 20) && //15
+                (LeftY <= 30) && //15
                 (RightY >= -10) &&
-                (RightY <= 30))
+                (RightY <= 40))
         {
             gesture_states.cyclesInState_flying = 0;
             gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_2;
@@ -1728,8 +1749,8 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightX <= -50) &&
                 (RightY >= -50) &&
                 (RightY <= 40) &&
-                ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftX > 50) || (LeftY < 0)))
+                ((LeftX > 80) || (LeftX < 0)) &&
+                ((LeftY > 50) || (LeftY < 0)))
         {
             gesture_states.cyclesInState_waving_l = 0;
             gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MAX_1;
@@ -1748,7 +1769,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -20) &&
                 (RightY <= 50) &&
                 ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftX > 50) || (LeftY < 0)))
+                ((LeftY > 50) || (LeftY < 0)))
         {
             gesture_states.cyclesInState_waving_l = 0;
             gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MIN_1;
@@ -1770,7 +1791,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -20) &&
                 (RightY <= 40) &&
                 ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftX > 50) || (LeftY < 0)))
+                ((LeftY > 50) || (LeftY < 0)))
         {
             gesture_states.cyclesInState_waving_l = 0;
             gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MAX_2;
@@ -1792,7 +1813,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 (RightY >= -20) &&
                 (RightY <= 40) &&
                 ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftX > 50) || (LeftY < 0)))
+                ((LeftY > 50) || (LeftY < 0)))
         {
             cout << "LEFT WAVING GESTURE DETECTED!" << endl;
             gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
@@ -2045,7 +2066,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     //        break;
     //    }
 
-            printJointCoords(jointCoords);
+     printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
 }
@@ -2107,13 +2128,13 @@ void playContent(gestures_e gesture, bool quit)
     case GESTURE_USAIN:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("bolt");
-        full_cmd.assign(base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext);
         usain_count++;
         break;
     case GESTURE_T:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("tpose");
-        full_cmd.assign(base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext);
         t_count++;
         break;
     case GESTURE_POWERPOSE:
@@ -2124,7 +2145,7 @@ void playContent(gestures_e gesture, bool quit)
         break;
     case GESTURE_STOP:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
-        title.assign("fly");
+        title.assign("stop");
         full_cmd.assign(base_path + title + ext);
         stop_count++;
         break;
@@ -2184,13 +2205,13 @@ void playContent(gestures_e gesture, bool quit)
         break;
     case GESTURE_WAVING_L:
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
-        title.assign("fly");
+        title.assign("leftwave");
         full_cmd.assign(base_path + title + ext);
         waving_l_count++;
         break;
 
     case GESTURE_IDLE:
-        rand_idx = rand() % 6;
+        rand_idx = rand() % 2; //6
         idx.assign(to_string(rand_idx));
         //cout << rand_idx << endl;
 
@@ -2209,7 +2230,7 @@ void playContent(gestures_e gesture, bool quit)
     case GESTURE_READY:
         title.assign("ready");
         //vlc_cmd.assign("cvlc -f -R --one-instance --no-video-title-show ");
-        full_cmd.assign(base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext);
         cout << "play video in ready" <<endl<<endl;
         break;
     default:
@@ -2235,13 +2256,13 @@ void playContent(gestures_e gesture, bool quit)
         //if(file != NULL)
         if(good)
         {
-            cout << "file found " << full_cmd << endl;
+//            cout << "file found " << full_cmd << endl;
             system(valid_video_cmd.c_str());
         }
         else
         {
 
-            cout << "file not found " << full_cmd << endl;
+//            cout << "file not found " << full_cmd << endl;
             system(default_video_cmd.c_str());
         }
     }
