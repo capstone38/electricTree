@@ -286,6 +286,7 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
 gestures_e currentVideoType();
 void updateNumVideos(int *numVideos);
 int waitUntilContentStart(gestures_e gesture);
+int detectNumVideo(string name);
 
 void updateAnalytics(bool update, gesture_states_t &gesture_states);
 string format;  // random strings for formating

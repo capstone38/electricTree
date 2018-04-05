@@ -564,14 +564,15 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         //                (RightY >= 5)
         //                )
         //        {
-        if( (LeftX <= 70) &&
-                (LeftX >= 10 ) &&
-                (LeftY <= 20) &&
-                (LeftY >= -50) &&
-                (RightX <= -60) &&
-                (RightX >= -110) &&
-                (RightY <= 60) &&
-                (RightY >= 30))
+        if( (LeftX <= 80) &&
+                (LeftX >= 0 ) &&
+                (LeftY <= 30) &&
+                (LeftY >= -60) &&
+                (RightX <= -50) &&
+                (RightX >= -100 ) &&
+                (RightY <= 70) &&
+                (RightY >= 20)
+                )
         {
             gesture_states.usain_gesture_state = gesture_states.USAIN_DETECTING;
             cout << "DETECTING USAIN BOLT POSE..." << endl;
@@ -580,14 +581,14 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         }
         break;
     case gesture_states.USAIN_DETECTING:
-        if( (LeftX <= 70) &&
-                (LeftX >= 10 ) &&
-                (LeftY <= 20) &&
-                (LeftY >= -50) &&
-                (RightX <= -60) &&
-                (RightX >= -90 ) &&
-                (RightY <= 60) &&
-                (RightY >= 30)
+        if( (LeftX <= 80) &&
+                (LeftX >= 0 ) &&
+                (LeftY <= 30) &&
+                (LeftY >= -60) &&
+                (RightX <= -50) &&
+                (RightX >= -100 ) &&
+                (RightY <= 70) &&
+                (RightY >= 20)
                 )
         {
             gesture_states.cyclesInState_usain_detecting++;
@@ -611,14 +612,14 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 
     case gesture_states.USAIN_LOST:
         //cout << "LOST USAIN BOLT POSE..." << gesture_states.cyclesInState_usain_lost << " CYCLES" << endl;
-        if( (LeftX <= 70) &&
-                (LeftX >= 10 ) &&
-                (LeftY <= 20) &&
-                (LeftY >= -50) &&
-                (RightX <= -60) &&
-                (RightX >= -90 ) &&
-                (RightY <= 60) &&
-                (RightY >= 30)
+        if( (LeftX <= 80) &&
+                (LeftX >= 0 ) &&
+                (LeftY <= 30) &&
+                (LeftY >= -60) &&
+                (RightX <= -50) &&
+                (RightX >= -100 ) &&
+                (RightY <= 70) &&
+                (RightY >= 20)
                 )
         {
             gesture_states.usain_gesture_state = gesture_states.USAIN_DETECTING;
@@ -2131,138 +2132,106 @@ void playContent(gestures_e gesture, bool quit)
     {
         rand_idx = rand() % (numVideos[gesture]);
     }
+    else
+    {
+        rand_idx = 0;
+    }
 
 
 //    rand_idx = 2;
     switch (gesture)
     {
     case GESTURE_VICTORY:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/victory.mov");
         title.assign("victory");
-        full_cmd.assign(base_path + title + ext);
         victory_count++;
         break;
     case GESTURE_USAIN:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("bolt");
-        full_cmd.assign(base_path + title + ext2);
         usain_count++;
         break;
     case GESTURE_T:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/bolt.mov");
         title.assign("tpose");
-        full_cmd.assign(base_path + title + ext2);
         t_count++;
         break;
     case GESTURE_POWERPOSE:
         title.assign("flexing");
-        full_cmd.assign(base_path + title + ext);
         powerpose_count++;
         cout << "POWER POSE COUNT: " << powerpose_count << endl;
         break;
     case GESTURE_STOP:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
-        title.assign("fly");
-        full_cmd.assign(base_path + title + ext);
+        title.assign("stop");
         stop_count++;
         break;
     case GESTURE_POINTING_TRF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/toprightforward.mp4");
         title.assign("toprightforward");
-        full_cmd.assign(base_path + title + ext);
         pointing_trf_count++;
         break;
     case GESTURE_POINTING_RF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/rightforward.mp4");
         title.assign("rightforward");
-        full_cmd.assign(base_path + title + ext);
         pointing_rf_count++;
         break;
     case GESTURE_POINTING_TLF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleftforward.mp4");
         title.assign("topleftforward");
-        full_cmd.assign(base_path + title + ext);
         pointing_tlf_count++;
         break;
     case GESTURE_POINTING_LF:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/leftforward.mp4");
         title.assign("leftforward");
-        full_cmd.assign(base_path + title + ext);
         pointing_lf_count++;
         break;
     case GESTURE_POINTING_TR:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topright.mp4");
         title.assign("topright");
-        full_cmd.assign(base_path + title + ext);
         pointing_tr_count++;
         break;
     case GESTURE_POINTING_R:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/right.mp4");
         title.assign("right");
-        full_cmd.assign(base_path + title + ext);
         pointing_r_count++;
         break;
     case GESTURE_POINTING_TL:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/topleft.mp4");
         title.assign("topleft");
-        full_cmd.assign(base_path + title + ext);
         pointing_tl_count++;
         break;
     case GESTURE_POINTING_L:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/left.mp4");
         title.assign("left");
-        full_cmd.assign(base_path + title + ext);
         pointing_l_count++;
         break;
     case GESTURE_FLYING:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
-        full_cmd.assign(base_path + title + ext);
         flying_count++;
         break;
     case GESTURE_WAVING_L:
-        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
-        title.assign("fly");
-        full_cmd.assign(base_path + title + ext);
-        full_cmd2.assign(full_cmd);
+        title.assign("leftwave");
         waving_l_count++;
         break;
 
     case GESTURE_IDLE:
-
         cout << "Playing idle vid number " << rand_idx << endl;
-        idx.assign(to_string(rand_idx));
-        //cout << rand_idx << endl;
-
-        if(rand_idx > 0)
-        {
-            title.assign("idle");
-            ext.assign("\).mp4");
-            full_cmd.assign(base_path + title + "\(" + idx + ext);
-            full_cmd2.assign(base_path + title + "\\(" + idx + "\\" + ext);
-        }
-        else
-        {
-            title.assign("idle");
-            ext.assign(".mp4");
-            full_cmd.assign(base_path + title + ext);
-            full_cmd2.assign(full_cmd);
-        }
-
+        title.assign("idle");
         break;
     case GESTURE_READY:
         title.assign("ready");
-        //vlc_cmd.assign("cvlc -f -R --one-instance --no-video-title-show ");
-        full_cmd.assign(base_path + title + ext);
-        full_cmd2.assign(full_cmd);
         cout << "play video in ready" <<endl<<endl;
         break;
     default:
-        system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/test.mov");
+        //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/test.mov");
         title.assign("test");
         full_cmd.assign(base_path + title + ext2);
         break;
 
+    }
+
+    // process strings to escape brackets properly
+    idx.assign(to_string(rand_idx));
+    if(rand_idx > 0)
+    {
+        ext.assign("\).mp4");
+        full_cmd.assign(base_path + title + "\(" + idx + ext);
+        full_cmd2.assign(base_path + title + "\\(" + idx + "\\" + ext);
+    }
+    else
+    {
+        ext.assign(".mp4");
+        full_cmd.assign(base_path + title + ext);
+        full_cmd2.assign(full_cmd);
     }
 
 
@@ -2486,30 +2455,8 @@ void updateAnalytics(bool update, gesture_states_t &gesture_states) {
     }
 }
 
-void updateNumVideos(int *numVideos)
+int detectNumVideo(string name)
 {
-    /*GESTURE_USAIN=0,
-    GESTURE_T,
-    GESTURE_VICTORY,
-    GESTURE_POWERPOSE,
-    GESTURE_STOP,
-    GESTURE_FLYING,
-    GESTURE_WAVING_R,
-    GESTURE_WAVING_L,
-    GESTURE_JUMPING,
-    GESTURE_POINTING_TRF,
-    GESTURE_POINTING_RF,
-    GESTURE_POINTING_TLF,
-    GESTURE_POINTING_LF,
-    GESTURE_POINTING_TR,
-    GESTURE_POINTING_R,
-    GESTURE_POINTING_TL,
-    GESTURE_POINTING_L,
-    GESTURE_RUNNING,
-    GESTURE_IDLE,
-    GESTURE_READY,
-    GESTURE_UNDEFINED*/
-
     string base_path("/home/capstone38/Desktop/electricTree/videos/");
     string title;
     string ext;
@@ -2524,13 +2471,13 @@ void updateNumVideos(int *numVideos)
 
         if(idx > 0)
         {
-            title.assign("idle\(");
+            title.assign(name + "\(");
             ext.assign("\).mp4");
             full_cmd.assign(base_path + title + id + ext);
         }
         else
         {
-            title.assign("idle");
+            title.assign(name);
             ext.assign(".mp4");
             full_cmd.assign(base_path + title + ext);
         }
@@ -2553,9 +2500,64 @@ void updateNumVideos(int *numVideos)
     } while(good == true);
     idx--;
 
-    numVideos[GESTURE_IDLE] = idx;
+    return idx;
+}
 
-    cout << "abc found " << idx << " idle videos" << endl;
+void updateNumVideos(int *numVideos)
+{
+    /*
+    ,
+    GESTURE_VICTORY,
+    GESTURE_POWERPOSE,
+    GESTURE_STOP,
+    GESTURE_FLYING,
+    GESTURE_WAVING_R,
+    GESTURE_WAVING_L,
+    GESTURE_JUMPING,
+    GESTURE_POINTING_TRF,
+    GESTURE_POINTING_RF,
+    GESTURE_POINTING_TLF,
+    GESTURE_POINTING_LF,
+    GESTURE_POINTING_TR,
+    GESTURE_POINTING_R,
+    GESTURE_POINTING_TL,
+    GESTURE_POINTING_L,
+    GESTURE_RUNNING,
+    GESTURE_IDLE,
+    GESTURE_READY,
+    GESTURE_UNDEFINED*/
+
+    vector<string> names;
+
+    names.push_back("bolt");
+    names.push_back("tpose");
+    names.push_back("victory");
+    names.push_back("flexing");
+    names.push_back("stop");
+    names.push_back("fly");
+    names.push_back("rightwave");
+    names.push_back("leftwave");
+    names.push_back("jump");
+    names.push_back("toprightforward");
+    names.push_back("rightforward");
+    names.push_back("topleftforward");
+    names.push_back("leftforward");
+    names.push_back("topright");
+    names.push_back("right");
+    names.push_back("topleft");
+    names.push_back("left");
+    names.push_back("running");
+    names.push_back("idle");
+    names.push_back("ready");
+    names.push_back("undefined");
+
+
+    for(int gesture = 0; gesture < GESTURE_UNDEFINED; gesture++)
+    {
+        numVideos[gesture] = detectNumVideo(names[gesture]);
+        cout << "abc found " << numVideos[gesture] << names[gesture] << " videos" << endl;
+
+    }
 }
 
 int waitUntilContentStart(gestures_e gesture)
