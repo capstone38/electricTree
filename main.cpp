@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 
 
 
-    //updateNumVideos(numVideos);
+    updateNumVideos(numVideos);
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -2124,16 +2124,16 @@ void playContent(gestures_e gesture, bool quit)
 
     string full_cmd;
     string full_cmd2;
-/*
+
     cout << numVideos[gesture] << endl;
 
     if(numVideos[gesture] != 0)
     {
         rand_idx = rand() % (numVideos[gesture]);
     }
-*/
 
-    rand_idx = 2;
+
+//    rand_idx = 2;
     switch (gesture)
     {
     case GESTURE_VICTORY:
