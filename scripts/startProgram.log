@@ -6795,3 +6795,4 @@ enabling: stream:COLOR, 320x240x30, format:RGB8
 
 -------- Press Esc key to exit --------
 
+/bin/bash: /home/capstone38/Desktop/electricTree/scripts/startup.sh: No such file or directory

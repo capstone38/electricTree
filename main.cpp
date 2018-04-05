@@ -8,10 +8,10 @@
 #include <cstdlib>
 #include <ctime>
 
-// Boost Libraries
+// Boost Libraries-
 #include <boost/interprocess/ipc/message_queue.hpp>
 
-// Realsense libraries
+// Realsense librariesf
 #include <librealsense/rs.hpp>
 #include "rs_sdk.h"
 #include "version.h"
@@ -287,6 +287,7 @@ int main(int argc, char** argv)
             }
         }
 
+        cout << "state: " << state << endl;
 
         //Main program FSM implementation
         switch (state)
@@ -329,6 +330,8 @@ int main(int argc, char** argv)
                 thread video(playContent, GESTURE_READY, shouldQuit);
                 video.detach();
             }
+
+            waitUntilContentStart(GESTURE_READY);
 
             if(pid_in_center != INVALID_PERSONID)
             {
@@ -394,6 +397,7 @@ int main(int argc, char** argv)
                     video.detach();
                 }
 
+
             }
             break;
 
@@ -405,12 +409,15 @@ int main(int argc, char** argv)
             thread idlevideo(playContent, GESTURE_IDLE, shouldQuit);
             idlevideo.detach();
         }
+
+            waitUntilContentStart(GESTURE_IDLE);
             cyclesSpentDetected = 0;
 
             state = STATE_IDLEVIDEO_UNDERWAY;
             break;
 
         case STATE_IDLEVIDEO_UNDERWAY:
+            cout << "PID in centre: " << pid_in_center << endl;
             if(pid_in_center != INVALID_PERSONID)
             {
                 if(cyclesSpentDetected >= SEC_TO_CYCLES(0.5)) {
@@ -427,7 +434,6 @@ int main(int argc, char** argv)
             {
                 cyclesSpentDetected = 0;
             }
-
 
             if(currentVideoType() == GESTURE_UNDEFINED)
             {
@@ -2218,6 +2224,7 @@ void playContent(gestures_e gesture, bool quit)
             title.assign("idle");
             ext.assign(".mp4");
             full_cmd.assign(base_path + title + ext);
+            full_cmd2.assign(full_cmd);
         }
 
         break;
@@ -2252,12 +2259,15 @@ void playContent(gestures_e gesture, bool quit)
         if(good)
         {
             cout << "file found " << full_cmd << endl;
+            cout << "cmd2: " << full_cmd2 << endl;
+            cout << valid_video_cmd << endl;
             system(valid_video_cmd.c_str());
         }
         else
         {
 
             cout << "file not found " << full_cmd << endl;
+            cout << default_video_cmd << endl;
             system(default_video_cmd.c_str());
         }
     }
@@ -2523,6 +2533,16 @@ void updateNumVideos(int *numVideos)
     numVideos[GESTURE_IDLE] = idx;
 
     cout << "abc found " << idx << " idle videos" << endl;
+}
+
+void waitUntilContentStart(gestures_e gesture)
+{
+    int timeout = 1000;
+    int i;
+    while((currentVideoType() != gesture) && i < timeout)
+    {
+       ; // wait
+    }
 }
 
 void resetGestureStates(gesture_states_t &gesture_states)
