@@ -84,8 +84,8 @@ int main(int argc, char** argv)
 //    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD  , 0, 0); //400
 //    rs_set_device_option(camera, RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD  , 2047, 0); //400
 
-        rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 100, 0); //400
-        rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 7, 0); //164
+        rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 400, 0); //400
+        rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 164, 0); //164
 
 //    rs_set_device_option(camera, RS_OPTION_COLOR_BACKLIGHT_COMPENSATION, 0, 0); //400
 //    rs_set_device_option(camera, RS_OPTION_COLOR_BRIGHTNESS  , 62, 0); //400
@@ -103,24 +103,39 @@ int main(int argc, char** argv)
 //    rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 3000, 0); //512 needs auto exposure enabled
 //    rs_set_device_option(camera, RS_OPTION_R200_EMITTER_ENABLED, 1, 0);
 
-    rs_option options[10];
+    rs_option options[11];
 
-    options[0] = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
-    options[1] = RS_OPTION_COLOR_BRIGHTNESS;
-    options[2] = RS_OPTION_COLOR_CONTRAST;
-    options[3] = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
-    options[4] = RS_OPTION_COLOR_GAIN;
-    options[5] = RS_OPTION_COLOR_GAMMA;
-    options[6] = RS_OPTION_COLOR_HUE;
-    options[7] = RS_OPTION_COLOR_SATURATION;
-    options[8] = RS_OPTION_COLOR_SHARPNESS;
-    options[9] = RS_OPTION_COLOR_WHITE_BALANCE;
+//    options[0] = RS_OPTION_COLOR_BACKLIGHT_COMPENSATION;
+//    options[1] = RS_OPTION_COLOR_BRIGHTNESS;
+//    options[2] = RS_OPTION_COLOR_CONTRAST;
+//    options[3] = RS_OPTION_COLOR_ENABLE_AUTO_WHITE_BALANCE;
+//    options[4] = RS_OPTION_COLOR_GAIN;
+//    options[5] = RS_OPTION_COLOR_GAMMA;
+//    options[6] = RS_OPTION_COLOR_HUE;
+//    options[7] = RS_OPTION_COLOR_SATURATION;
+//    options[8] = RS_OPTION_COLOR_SHARPNESS;
+//    options[9] = RS_OPTION_COLOR_WHITE_BALANCE;
+
+    options[0] = RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT;
+    options[1] = RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_DECREMENT;
+    options[2] = RS_OPTION_R200_DEPTH_CONTROL_ESTIMATE_MEDIAN_INCREMENT;
+    options[3] = RS_OPTION_R200_DEPTH_CONTROL_MEDIAN_THRESHOLD;
+    options[4] = RS_OPTION_R200_DEPTH_CONTROL_SCORE_MINIMUM_THRESHOLD;
+    options[5] = RS_OPTION_R200_DEPTH_CONTROL_SCORE_MAXIMUM_THRESHOLD;
+    options[6] = RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_COUNT_THRESHOLD;
+    options[7] = RS_OPTION_R200_DEPTH_CONTROL_TEXTURE_DIFFERENCE_THRESHOLD;
+    options[8] = RS_OPTION_R200_DEPTH_CONTROL_SECOND_PEAK_THRESHOLD;
+    options[9] = RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD;
+    options[10] = RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD;
 
 
-    rs_reset_device_options_to_default(camera, options, 10, 0);
+    rs_reset_device_options_to_default(camera, options, 11, 0);
 
 
-    updateNumVideos(numVideos);
+
+
+
+    //updateNumVideos(numVideos);
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -301,10 +316,11 @@ int main(int argc, char** argv)
                 cout << "found someone!" << endl;
                 cout<<"Person ID: " << pid_in_center <<" is in center!" <<endl<<endl;
 
+                //do
                 {
                     thread video(playContent, GESTURE_READY, shouldQuit);
                     video.detach();
-                }
+                } //while(waitUntilContentStart(GESTURE_READY) == 0);
 
                 state = STATE_READY;
             }
@@ -327,11 +343,14 @@ int main(int argc, char** argv)
 
             if(currentVideoType() == GESTURE_UNDEFINED)
             {
+                //do
+                {
                 thread video(playContent, GESTURE_READY, shouldQuit);
                 video.detach();
+                }//while(waitUntilContentStart(GESTURE_READY) == 0);
             }
 
-            waitUntilContentStart(GESTURE_READY);
+
 
             if(pid_in_center != INVALID_PERSONID)
             {
@@ -405,12 +424,12 @@ int main(int argc, char** argv)
         case STATE_IDLEVIDEO_START:
             // Issue system call to playback idle video content in a detached thread
 
+        //do
         {
             thread idlevideo(playContent, GESTURE_IDLE, shouldQuit);
             idlevideo.detach();
-        }
+        } //while(waitUntilContentStart(GESTURE_IDLE));
 
-            waitUntilContentStart(GESTURE_IDLE);
             cyclesSpentDetected = 0;
 
             state = STATE_IDLEVIDEO_UNDERWAY;
@@ -2105,14 +2124,16 @@ void playContent(gestures_e gesture, bool quit)
 
     string full_cmd;
     string full_cmd2;
-
+/*
     cout << numVideos[gesture] << endl;
 
     if(numVideos[gesture] != 0)
     {
         rand_idx = rand() % (numVideos[gesture]);
     }
+*/
 
+    rand_idx = 2;
     switch (gesture)
     {
     case GESTURE_VICTORY:
@@ -2203,6 +2224,7 @@ void playContent(gestures_e gesture, bool quit)
         //system("cvlc -f --play-and-exit --no-video-title-show file:////home/capstone38/Desktop/electricTree/videos/fly.mov");
         title.assign("fly");
         full_cmd.assign(base_path + title + ext);
+        full_cmd2.assign(full_cmd);
         waving_l_count++;
         break;
 
@@ -2231,7 +2253,8 @@ void playContent(gestures_e gesture, bool quit)
     case GESTURE_READY:
         title.assign("ready");
         //vlc_cmd.assign("cvlc -f -R --one-instance --no-video-title-show ");
-        full_cmd.assign(base_path + title + ext2);
+        full_cmd.assign(base_path + title + ext);
+        full_cmd2.assign(full_cmd);
         cout << "play video in ready" <<endl<<endl;
         break;
     default:
@@ -2535,14 +2558,21 @@ void updateNumVideos(int *numVideos)
     cout << "abc found " << idx << " idle videos" << endl;
 }
 
-void waitUntilContentStart(gestures_e gesture)
+int waitUntilContentStart(gestures_e gesture)
 {
-    int timeout = 1000;
-    int i;
+    int retval = 1;
+    int timeout = 100;
+    int i=0;
     while((currentVideoType() != gesture) && i < timeout)
     {
-       ; // wait
+       i++; // wait
+       if(i==timeout)
+       {
+           retval = 0;
+       }
     }
+
+    return retval;
 }
 
 void resetGestureStates(gesture_states_t &gesture_states)
