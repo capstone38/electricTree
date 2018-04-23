@@ -6,6 +6,8 @@
 #define CYCLES_PER_SECOND 30
 #define SEC_TO_CYCLES(a) a*CYCLES_PER_SECOND
 
+#define DEBUG 0
+
 enum state_e
 {
     STATE_INIT=0,
@@ -219,9 +221,9 @@ struct gesture_states_t
 };
 
 // gesture detection timeouts (units are frames)
-#define STATIC_POSE_DETECTING_TIMEOUT 10
+#define STATIC_POSE_DETECTING_TIMEOUT 7
 #define STATIC_POSE_LOST_TIMEOUT 10
-#define FLYING_TIMEOUT 30
+#define FLYING_TIMEOUT 20
 #define WAVING_TIMEOUT 20
 #define JUMPING_TIMEOUT 20
 #define RUNNING_TIMEOUT 25
@@ -285,6 +287,8 @@ void resetGestureStates(gesture_states_t &gesture_states);
 bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::PointCombined centerMass);
 gestures_e currentVideoType();
 void updateNumVideos(int *numVideos);
+int waitUntilContentStart(gestures_e gesture);
+int detectNumVideo(string name);
 
 void updateAnalytics(bool update, gesture_states_t &gesture_states);
 string format;  // random strings for formating
