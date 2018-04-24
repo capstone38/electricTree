@@ -161,6 +161,33 @@ electricTree/preinstall:
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/preinstall
 .PHONY : electricTree/preinstall
 
+gesture.o: gesture.cpp.o
+
+.PHONY : gesture.o
+
+# target to build an object file
+gesture.cpp.o:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesture.cpp.o
+.PHONY : gesture.cpp.o
+
+gesture.i: gesture.cpp.i
+
+.PHONY : gesture.i
+
+# target to preprocess a source file
+gesture.cpp.i:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesture.cpp.i
+.PHONY : gesture.cpp.i
+
+gesture.s: gesture.cpp.s
+
+.PHONY : gesture.s
+
+# target to generate assembly for a file
+gesture.cpp.s:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesture.cpp.s
+.PHONY : gesture.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -200,6 +227,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... install/local"
 	@echo "... rebuild_cache"
+	@echo "... gesture.o"
+	@echo "... gesture.i"
+	@echo "... gesture.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

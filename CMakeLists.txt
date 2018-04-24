@@ -25,6 +25,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fmessage-length=0 --std=c++11
 
 set(SOURCES
     main.cpp
+    gesture.cpp
 )
 
 include_directories(

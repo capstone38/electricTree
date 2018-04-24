@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/electricTree.dir/main.cpp.o"
+  "CMakeFiles/electricTree.dir/gesture.cpp.o"
   "electricTree.pdb"
   "electricTree"
   "electricTree.pdb"

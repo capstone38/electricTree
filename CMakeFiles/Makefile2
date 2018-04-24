@@ -66,7 +66,7 @@ CMAKE_BINARY_DIR = /home/capstone38/Desktop/electricTree
 CMakeFiles/electricTree.dir/all:
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/depend
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/capstone38/Desktop/electricTree/CMakeFiles --progress-num=1,2,3 "Built target electricTree"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/capstone38/Desktop/electricTree/CMakeFiles --progress-num=1,2,3,4 "Built target electricTree"
 .PHONY : CMakeFiles/electricTree.dir/all
 
 # Include target in all.
@@ -76,7 +76,7 @@ all: CMakeFiles/electricTree.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/electricTree.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/capstone38/Desktop/electricTree/CMakeFiles 3
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/capstone38/Desktop/electricTree/CMakeFiles 4
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/electricTree.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/capstone38/Desktop/electricTree/CMakeFiles 0
 .PHONY : CMakeFiles/electricTree.dir/rule

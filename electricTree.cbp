@@ -130,6 +130,12 @@
          </MakeCommands>
       </Target>
       </Build>
+      <Unit filename="/home/capstone38/Desktop/electricTree/gesture.cpp">
+         <Option target="electricTree"/>
+      </Unit>
+      <Unit filename="/home/capstone38/Desktop/electricTree/gesture.h">
+         <Option target="electricTree"/>
+      </Unit>
       <Unit filename="/home/capstone38/Desktop/electricTree/main.cpp">
          <Option target="electricTree"/>
       </Unit>

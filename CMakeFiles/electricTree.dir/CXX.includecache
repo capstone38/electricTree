@@ -6,6 +6,14 @@
 
 #IncludeRegexTransform: 
 
+/home/capstone38/Desktop/electricTree/gesture.cpp
+gesture.h
+/home/capstone38/Desktop/electricTree/gesture.h
+iostream
+-
+
+/home/capstone38/Desktop/electricTree/gesture.h
+
 /home/capstone38/Desktop/electricTree/main.cpp
 iostream
 -
@@ -35,6 +43,8 @@ main.h
 /home/capstone38/Desktop/electricTree/main.h
 string
 -
+gesture.h
+/home/capstone38/Desktop/electricTree/gesture.h
 
 /home/capstone38/Desktop/realsense/realsense_samples/samples/common/console_display/pt_console_display.hpp
 set

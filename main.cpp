@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 
 
 
-
+    vector<Gesture> gesturelist = defineGestures();
 
     updateNumVideos(numVideos);
 
@@ -293,7 +293,7 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, gesture_states);
+                gestureDetected = detectGestures(personJoints, gesturelist, gesture_states);
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
@@ -329,7 +329,7 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, gesture_states);
+                gestureDetected = detectGestures(personJoints, gesturelist, gesture_states);
 
                 // Implement cancel gesture.
                 if(gestureDetected == GESTURE_CANCEL)
@@ -418,7 +418,7 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
     return false;
 }
 
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states)
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture>& gesturelist, gesture_states_t& gesture_states)
 {
     int numDetectedJoints = personJoints->QueryNumJoints();
     std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
@@ -450,6 +450,108 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     jointCoords.Spiney = skeletonPoints.at(3).image.y;
     jointCoords.Spinez = skeletonPoints.at(3).world.z;
 
+    for(Gesture &g : gesturelist)
+    {
+        if(g.detect(jointCoords))
+        {
+            return g.id;
+        }
+    }
+
+    int LeftX = jointCoords.Lshoulderx - jointCoords.Lhandx;
+    int LeftY = jointCoords.Lshouldery - jointCoords.Lhandy;
+    int LeftZ = jointCoords.Lshoulderz - jointCoords.Lhandz;
+    int RightX = jointCoords.Rshoulderx - jointCoords.Rhandx;
+    int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
+    int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
+
+    // RIGHT WAVING
+    cout << "Checking waving gesture" << endl;
+    switch(gesture_states.waving_r_gesture_state)
+    {
+    case gesture_states.WAVING_R_INIT:
+        if((LeftX >= 40) &&
+                (LeftX <= 90) &&
+                (LeftY >= -20) && // 10
+                (LeftY <= 40) &&
+                ((RightX > 0) || (RightX < -50)) &&
+                ((RightY > 50) || (RightY < 20)))
+        {
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_1;
+        }
+        break;
+
+    case gesture_states.WAVING_R_MAX_1:
+        if((LeftX >= -20) &&
+                (LeftX <= 40) &&
+                (LeftY >= -20) && // 10
+                (LeftY <= 40) &&
+                ((RightX > 0) || (RightX < -50)) &&
+                ((RightY > 50) || (RightY < 20)))
+        {
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MIN_1;
+        }
+        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_waving_r++;
+        }
+        break;
+
+    case gesture_states.WAVING_R_MIN_1:
+        if((LeftX >= 40) &&
+                (LeftX <= 90) &&
+                (LeftY >= -20) && // 10
+                (LeftY <= 40) &&
+                ((RightX > 0) || (RightX < -50)) &&
+                ((RightY > 50) || (RightY < 20)))
+        {
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_2;
+        }
+        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_waving_r++;
+        }
+        break;
+
+    case gesture_states.WAVING_R_MAX_2:
+        if((LeftX >= -20) &&
+                (LeftX <= 40) &&
+                (LeftY >= -20) && // 10
+                (LeftY <= 40) &&
+                ((RightX > 0) || (RightX < -50)) &&
+                ((RightY > 50) || (RightY < 20)))
+        {
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
+                cout << "WAVING DETECTED" << endl;
+            return GESTURE_WAVING_R;
+        }
+        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT) {
+            gesture_states.cyclesInState_waving_r = 0;
+            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
+        }
+        else
+        {
+            gesture_states.cyclesInState_waving_r++;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+/*
+
     // check for each pose sequentially.
     // some way to make this cleaner, perhaps a helper function with just jointCoords struct as only parameter?
 
@@ -464,7 +566,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
 //    jumpHeadCurrY = jointCoords.heady;
 //    jumpHeadCurrZ = jointCoords.headz;
 
-
+*/
 
 
 
@@ -472,6 +574,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
      * STATIC GESTURES BEGIN
      */
 
+    /*
     // USAIN BOLT POSE
     switch(gesture_states.usain_gesture_state)
     {
@@ -1348,8 +1451,8 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         }
         break;
     }
-
-
+*/
+/*
 
     // FLYING GESTURE
     switch(gesture_states.flying_gesture_state)
@@ -1604,7 +1707,7 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     default:
         break;
     }
-
+*/
             printJointCoords(jointCoords);
 
     return GESTURE_UNDEFINED;
@@ -2046,3 +2149,633 @@ void resetGestureStates(gesture_states_t &gesture_states)
     gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
 }
 
+vector<Gesture> defineGestures(void)
+{
+    vector<Gesture> out;
+
+    Gesture usain(GESTURE_USAIN,
+                  (int)0,    // LeftX_min
+                  (int)80,   // LeftX_max
+                  (int)-60,  // LeftY_min
+                  (int)30,   // LeftY_max
+                  (int)-100, // RightX_min
+                  (int)-50,  // RightX_max
+                  (int)20,   // RightY_min
+                  (int)70);  // RightY_max
+    out.push_back(usain);
+
+    Gesture tpose(GESTURE_T,
+                  (int)45,    // LeftX_min
+                  (int)1000,   // LeftX_max
+                  (int)-20,  // LeftY_min
+                  (int)20,   // LeftY_max
+                  (int)-MAXCOORD, // RightX_min
+                  (int)-45,  // RightX_max
+                  (int)-20,   // RightY_min
+                  (int)20);  // RightY_max
+    out.push_back(tpose);
+
+    Gesture stop(GESTURE_STOP,
+                 (int)-20,    // LeftX_min
+                 (int)40,   // LeftX_max
+                 (int)0,  // LeftY_min
+                 (int)60,   // LeftY_max
+                 (int)0, // LeftZ_min
+                 (int)1550,  // LeftZ_max
+                 (int)-MAXCOORD, // RightX_min
+                 (int)MAXCOORD,  // RightX_max
+                 (int)-MAXCOORD,   // RightY_min
+                 (int)MAXCOORD,  // RightY_max
+                 (int)0,   // RightZ_min
+                 (int)MAXCOORD  // RightZ_max
+                );
+    out.push_back(stop);
+
+    Gesture point_trf(GESTURE_POINTING_TRF,
+                 (int)50,    // LeftX_min
+                 (int)90,   // LeftX_max
+                 (int)50,  // LeftY_min
+                 (int)90,   // LeftY_max
+                 (int)300, // LeftZ_min
+                 (int)500,  // LeftZ_max
+                 (int)-MAXCOORD, // RightX_min
+                 (int)MAXCOORD,  // RightX_max
+                 (int)110,   // RightY_min
+                 (int)-40,  // RightY_max
+                 (int)-MAXCOORD,   // RightZ_min
+                 (int)MAXCOORD  // RightZ_max
+                );
+    out.push_back(point_trf);
+
+    return out;
+}
+
+/*
+        if((LeftX >= -20) &&
+                (LeftX <= 40) &&
+                (LeftY >= 0) &&
+                (LeftY <= 60) &&
+                (jointCoords.Lhandz <= 1550))
+
+
+//POINTING POSES
+
+// POINTING TOP RIGHT FORWARD POSE
+switch(gesture_states.pointing_trf_gesture_state)
+{
+case gesture_states.POINTING_TRF_INIT:
+    if( (LeftX <= 90) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 90) &&
+            (LeftY >= 50) &&
+            (LeftZ <= 500) &&
+            (LeftZ >= 300) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_DETECTING;
+        gesture_states.cyclesInState_pointing_trf_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_TRF_DETECTING:
+    if( (LeftX <= 90) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 90) &&
+            (LeftY >= 50) &&
+            (LeftZ <= 500) &&
+            (LeftZ >= 300) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.cyclesInState_pointing_trf_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_trf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_TRF;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_LOST;
+        gesture_states.cyclesInState_pointing_trf_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_TRF_LOST:
+    if( (LeftX <= 90) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 90) &&
+            (LeftY >= 50) &&
+            (LeftZ <= 500) &&
+            (LeftZ >= 300) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_DETECTING;
+        gesture_states.cyclesInState_pointing_trf_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_trf_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_INIT;
+        gesture_states.cyclesInState_pointing_trf_detecting = 0;
+        gesture_states.cyclesInState_pointing_trf_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_trf_lost++;
+    }
+    break;
+}
+
+// POINTING RIGHT FORWARD POSE
+switch(gesture_states.pointing_rf_gesture_state)
+{
+case gesture_states.POINTING_RF_INIT:
+    if( (LeftX <= 120) &&
+            (LeftX >= 60 ) &&
+            (LeftY <= 30) &&
+            (LeftY >= -30) &&
+            (LeftZ <= 670) &&
+            (LeftZ >= 230) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_rf_gesture_state = gesture_states.POINTING_RF_DETECTING;
+        gesture_states.cyclesInState_pointing_rf_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_RF_DETECTING:
+    if( (LeftX <= 120) &&
+            (LeftX >= 60 ) &&
+            (LeftY <= 30) &&
+            (LeftY >= -30) &&
+            (LeftZ <= 670) &&
+            (LeftZ >= 230) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.cyclesInState_pointing_rf_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_rf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_RF;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_rf_gesture_state = gesture_states.POINTING_RF_LOST;
+        gesture_states.cyclesInState_pointing_rf_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_RF_LOST:
+    if( (LeftX <= 120) &&
+            (LeftX >= 60 ) &&
+            (LeftY <= 30) &&
+            (LeftY >= -30) &&
+            (LeftZ <= 670) &&
+            (LeftZ >= 230) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_rf_gesture_state = gesture_states.POINTING_RF_DETECTING;
+        gesture_states.cyclesInState_pointing_rf_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_rf_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_rf_gesture_state = gesture_states.POINTING_RF_INIT;
+        gesture_states.cyclesInState_pointing_rf_detecting = 0;
+        gesture_states.cyclesInState_pointing_rf_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_rf_lost++;
+    }
+    break;
+}
+
+// POINTING TOP LEFT FORWARD POSE
+switch(gesture_states.pointing_tlf_gesture_state)
+{
+case gesture_states.POINTING_TLF_INIT:
+    if( (RightX <= -50) &&
+            (RightX >= -100 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 420) &&
+            (RightZ >= 180) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_tlf_gesture_state = gesture_states.POINTING_TLF_DETECTING;
+        gesture_states.cyclesInState_pointing_tlf_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_TLF_DETECTING:
+    if( (RightX <= -50) &&
+            (RightX >= -100 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 420) &&
+            (RightZ >= 180) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.cyclesInState_pointing_tlf_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_tlf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_TLF;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_tlf_gesture_state = gesture_states.POINTING_TLF_LOST;
+        gesture_states.cyclesInState_pointing_tlf_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_TLF_LOST:
+    if( (RightX <= -50) &&
+            (RightX >= -100 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 420) &&
+            (RightZ >= 180) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_tlf_gesture_state = gesture_states.POINTING_TLF_DETECTING;
+        gesture_states.cyclesInState_pointing_tlf_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_tlf_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_tlf_gesture_state = gesture_states.POINTING_TLF_INIT;
+        gesture_states.cyclesInState_pointing_tlf_detecting = 0;
+        gesture_states.cyclesInState_pointing_tlf_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_tlf_lost++;
+    }
+    break;
+}
+
+// POINTING LEFT FORWARD POSE
+switch(gesture_states.pointing_lf_gesture_state)
+{
+case gesture_states.POINTING_LF_INIT:
+    if( (RightX <= -60) &&
+            (RightX >= -120 ) &&
+            (RightY <= 30) &&
+            (RightY >= -20) &&
+            (RightZ <= 550) &&
+            (RightZ >= 70) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_lf_gesture_state = gesture_states.POINTING_LF_DETECTING;
+        gesture_states.cyclesInState_pointing_lf_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_LF_DETECTING:
+    if( (RightX <= -60) &&
+            (RightX >= -120 ) &&
+            (RightY <= 30) &&
+            (RightY >= -20) &&
+            (RightZ <= 550) &&
+            (RightZ >= 70) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.cyclesInState_pointing_lf_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_lf_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_LF;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_lf_gesture_state = gesture_states.POINTING_LF_LOST;
+        gesture_states.cyclesInState_pointing_lf_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_LF_LOST:
+    if( (RightX <= -60) &&
+            (RightX >= -120 ) &&
+            (RightY <= 30) &&
+            (RightY >= -20) &&
+            (RightZ <= 550) &&
+            (RightZ >= 70) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_lf_gesture_state = gesture_states.POINTING_LF_DETECTING;
+        gesture_states.cyclesInState_pointing_lf_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_lf_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_lf_gesture_state = gesture_states.POINTING_LF_INIT;
+        gesture_states.cyclesInState_pointing_lf_detecting = 0;
+        gesture_states.cyclesInState_pointing_lf_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_lf_lost++;
+    }
+    break;
+}
+
+// POINTING TOP RIGHT POSE
+switch(gesture_states.pointing_tr_gesture_state)
+{
+case gesture_states.POINTING_TR_INIT:
+    if( (LeftX <= 100) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 80) &&
+            (LeftY >= 30) &&
+            (LeftZ <= 20) &&
+            (LeftZ >= -140) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_tr_gesture_state = gesture_states.POINTING_TR_DETECTING;
+        gesture_states.cyclesInState_pointing_tr_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_TR_DETECTING:
+    if( (LeftX <= 100) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 80) &&
+            (LeftY >= 30) &&
+            (LeftZ <= 160) &&
+            (LeftZ >= -140) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.cyclesInState_pointing_tr_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_tr_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_TR;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_tr_gesture_state = gesture_states.POINTING_TR_LOST;
+        gesture_states.cyclesInState_pointing_tr_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_TR_LOST:
+    if( (LeftX <= 100) &&
+            (LeftX >= 50 ) &&
+            (LeftY <= 80) &&
+            (LeftY >= 30) &&
+            (LeftZ <= 160) &&
+            (LeftZ >= -140) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_tr_gesture_state = gesture_states.POINTING_TR_DETECTING;
+        gesture_states.cyclesInState_pointing_tr_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_tr_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_tr_gesture_state = gesture_states.POINTING_TR_INIT;
+        gesture_states.cyclesInState_pointing_tr_detecting = 0;
+        gesture_states.cyclesInState_pointing_tr_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_tr_lost++;
+    }
+    break;
+}
+
+// POINTING RIGHT POSE
+switch(gesture_states.pointing_r_gesture_state)
+{
+case gesture_states.POINTING_R_INIT:
+    if( (LeftX <= 110) &&
+            (LeftX >= 80 ) &&
+            (LeftY <= 25) &&
+            (LeftY >= -20) &&
+            (LeftZ <= 20) &&
+            (LeftZ >= -200) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_r_gesture_state = gesture_states.POINTING_R_DETECTING;
+        gesture_states.cyclesInState_pointing_r_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_R_DETECTING:
+    if( (LeftX <= 110) &&
+            (LeftX >= 80 ) &&
+            (LeftY <= 25) &&
+            (LeftY >= -20) &&
+            (LeftZ <= 20) &&
+            (LeftZ >= -200) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.cyclesInState_pointing_r_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_r_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_R;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_r_gesture_state = gesture_states.POINTING_R_LOST;
+        gesture_states.cyclesInState_pointing_r_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_R_LOST:
+    if( (LeftX <= 110) &&
+            (LeftX >= 80 ) &&
+            (LeftY <= 25) &&
+            (LeftY >= -20) &&
+            (LeftZ <= 20) &&
+            (LeftZ >= -200) &&
+            ((RightY < -40) || (RightY > 110)))
+    {
+        gesture_states.pointing_r_gesture_state = gesture_states.POINTING_R_DETECTING;
+        gesture_states.cyclesInState_pointing_r_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_r_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_r_gesture_state = gesture_states.POINTING_R_INIT;
+        gesture_states.cyclesInState_pointing_r_detecting = 0;
+        gesture_states.cyclesInState_pointing_r_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_r_lost++;
+    }
+    break;
+}
+
+// POINTING TOP LEFT POSE
+switch(gesture_states.pointing_tl_gesture_state)
+{
+case gesture_states.POINTING_TL_INIT:
+    if( (RightX <= -50) &&
+            (RightX >= -80 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 110) &&
+            (RightZ >= -120) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_tl_gesture_state = gesture_states.POINTING_TL_DETECTING;
+        gesture_states.cyclesInState_pointing_tl_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_TL_DETECTING:
+    if( (RightX <= -50) &&
+            (RightX >= -80 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 110) &&
+            (RightZ >= -120) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.cyclesInState_pointing_tl_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_tl_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_TL;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_tl_gesture_state = gesture_states.POINTING_TL_LOST;
+        gesture_states.cyclesInState_pointing_tl_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_TL_LOST:
+    if( (RightX <= -50) &&
+            (RightX >= -80 ) &&
+            (RightY <= 80) &&
+            (RightY >= 40) &&
+            (RightZ <= 110) &&
+            (RightZ >= -120) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_tl_gesture_state = gesture_states.POINTING_TL_DETECTING;
+        gesture_states.cyclesInState_pointing_tl_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_tl_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_tl_gesture_state = gesture_states.POINTING_TL_INIT;
+        gesture_states.cyclesInState_pointing_tl_detecting = 0;
+        gesture_states.cyclesInState_pointing_tl_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_tl_lost++;
+    }
+    break;
+}
+
+// POINTING LEFT POSE
+switch(gesture_states.pointing_l_gesture_state)
+{
+case gesture_states.POINTING_L_INIT:
+    if( (RightX <= -70) &&
+            (RightX >= -100 ) &&
+            (RightY <= 20) &&
+            (RightY >= -10) &&
+            (RightZ <= 110) &&
+            (RightZ >= -90) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_l_gesture_state = gesture_states.POINTING_L_DETECTING;
+        gesture_states.cyclesInState_pointing_l_detecting = 0;
+    }
+    break;
+case gesture_states.POINTING_L_DETECTING:
+    if( (RightX <= -70) &&
+            (RightX >= -100 ) &&
+            (RightY <= 20) &&
+            (RightY >= -10) &&
+            (RightZ <= 110) &&
+            (RightZ >= -90) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.cyclesInState_pointing_l_detecting++;
+
+        if(gesture_states.cyclesInState_pointing_l_detecting >= STATIC_POSE_DETECTING_TIMEOUT)
+        {
+            resetGestureStates(gesture_states);
+            return GESTURE_POINTING_L;
+        }
+    }
+    else
+    {
+        gesture_states.pointing_l_gesture_state = gesture_states.POINTING_L_LOST;
+        gesture_states.cyclesInState_pointing_l_lost = 0;
+    }
+    break;
+
+case gesture_states.POINTING_L_LOST:
+    if( (RightX <= -70) &&
+            (RightX >= -100 ) &&
+            (RightY <= 20) &&
+            (RightY >= -10) &&
+            (RightZ <= 110) &&
+            (RightZ >= -90) &&
+            ((LeftY < -50) || (LeftY > 90)))
+    {
+        gesture_states.pointing_l_gesture_state = gesture_states.POINTING_L_DETECTING;
+        gesture_states.cyclesInState_pointing_l_lost = 0;
+    }
+    else if(gesture_states.cyclesInState_pointing_l_lost >= STATIC_POSE_LOST_TIMEOUT)
+    {
+        gesture_states.pointing_l_gesture_state = gesture_states.POINTING_L_INIT;
+        gesture_states.cyclesInState_pointing_l_detecting = 0;
+        gesture_states.cyclesInState_pointing_l_lost = 0;
+    }
+    else
+    {
+        gesture_states.cyclesInState_pointing_l_lost++;
+    }
+    break;
+}*/
+
+/*
+ *         if((LeftX >= 45 ) &&            // recall that there is only a minimum arm length
+                (LeftY <= 20) &&
+                (LeftY >= -20) &&
+                (RightX <= -45) &&
+                (RightY <= 20) &&
+                (RightY >= -20)
+                )
+ * */
+
+/*
+case gesture_states.USAIN_INIT: //everything increased by 10
+
+    if( (LeftX <= 80) &&
+            (LeftX >= 0 ) &&
+            (LeftY <= 30) &&
+            (LeftY >= -60) &&
+            (RightX <= -50) &&
+            (RightX >= -100 ) &&
+            (RightY <= 70) &&
+            (RightY >= 20)
+            )
+    {
+
+    Gesture(gestures_e id,
+            int ls_lh_x_min = -1000,
+            int ls_lh_x_max = 1000,
+            int ls_lh_y_min = -1000,
+            int ls_lh_y_max = 1000,
+            int ls_lh_z_min = -1000,
+            int ls_lh_z_max = 1000,
+            int rs_rh_x_min = -1000,
+            int rs_rh_x_max = 1000,
+            int rs_rh_y_min = -1000,
+            int rs_rh_y_max = 1000,
+            int rs_rh_z_min = -1000,
+            int rs_rh_z_max = 1000) :
+}
+*/

@@ -3,10 +3,13 @@
 
 #include <string>
 
+#include "gesture.h"
+
 #define CYCLES_PER_SECOND 30
 #define SEC_TO_CYCLES(a) a*CYCLES_PER_SECOND
 
 #define DEBUG 0
+using namespace std;
 
 enum state_e
 {
@@ -21,32 +24,12 @@ enum state_e
     STATE_UNDEFINED
 };
 
-enum gestures_e
-{
-    GESTURE_USAIN=0,
-    GESTURE_T,
-    GESTURE_VICTORY,
-    GESTURE_POWERPOSE,
-    GESTURE_STOP,
-    GESTURE_FLYING,
-    GESTURE_WAVING_R,
-    GESTURE_WAVING_L,
-    GESTURE_JUMPING,
-    GESTURE_POINTING_TRF,
-    GESTURE_POINTING_RF,
-    GESTURE_POINTING_TLF,
-    GESTURE_POINTING_LF,
-    GESTURE_POINTING_TR,
-    GESTURE_POINTING_R,
-    GESTURE_POINTING_TL,
-    GESTURE_POINTING_L,
-    GESTURE_RUNNING,
-    GESTURE_IDLE,
-    GESTURE_READY,
-    GESTURE_UNDEFINED
-};
+
 
 #define INVALID_PERSONID -1
+
+
+
 
 struct gesture_states_t
 {
@@ -220,15 +203,7 @@ struct gesture_states_t
     int cyclesInState_running;
 };
 
-// gesture detection timeouts (units are frames)
-#define STATIC_POSE_DETECTING_TIMEOUT 7
-#define STATIC_POSE_LOST_TIMEOUT 10
-#define FLYING_TIMEOUT 20
-#define WAVING_TIMEOUT 20
-#define JUMPING_TIMEOUT 20
-#define RUNNING_TIMEOUT 25
 
-#define GESTURE_CANCEL GESTURE_WAVING_R // update this later if we want a different cancel gesture!!
 
 // variables used for jumping detection
 //int jumpHeadPreX;
@@ -256,31 +231,9 @@ int pointing_r_count;
 int pointing_tl_count;
 int pointing_l_count;
 
-struct jointCoords_t
-{
-    int Lhandx;
-    int Lhandy;
-    int Lhandz;
-    int Lshoulderx;
-    int Lshouldery;
-    int Lshoulderz;
 
-    int Rhandx;
-    int Rhandy;
-    int Rhandz;
-    int Rshoulderx;
-    int Rshouldery;
-    int Rshoulderz;
 
-    int Spinex;
-    int Spiney;
-    int Spinez;
-    int headx;
-    int heady;
-    int headz;
-};
-
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, gesture_states_t &gesture_states);
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture> &gesturelist, gesture_states_t& gesture_states);
 void printJointCoords(jointCoords_t &jc);
 void playContent(gestures_e gesture, bool quit);
 void resetGestureStates(gesture_states_t &gesture_states);
@@ -296,6 +249,8 @@ string total;   // "TOTAL:","TODAY_TOTAL_COUNT:", "OVERALL_TOTAL_COUNT:"
 int totalCount;  // "TOTAL: X","TODAY_TOTAL_COUNT: X", "OVERALL_TOTAL_COUNT: X"
 string gesture; // "WAVING_R:", "USAIN:", ...
 int gestureCount;   // "WAVING_R: X", "USAIN: X", ...
+
+vector<Gesture> defineGestures(void);
 
 #define VLC_CMD std::string("cvlc -f --play-and-exit --no-video-title-show")
 #define VIDEOS_PATH std::string("file:///home/zac/electricTree/videos/")
