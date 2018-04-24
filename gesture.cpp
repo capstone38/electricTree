@@ -85,6 +85,19 @@ bool Gesture::isWithinThreshold(jointCoords_t jointCoords)
        id == GESTURE_POINTING_RF  ||
        id == GESTURE_POINTING_TR   ||
        id == GESTURE_POINTING_R)
+    {        
+        return ( (LeftX <= ls_lh_x_max) &&
+                 (LeftX >= ls_lh_x_min ) &&
+                 (LeftY <= ls_lh_y_max) &&
+                 (LeftY >= ls_lh_y_min) &&
+                 (LeftZ <= ls_lh_z_max) &&
+                 (LeftZ >= ls_lh_z_min) &&
+                 ((RightY < rs_rh_y_max) || (RightY > rs_rh_y_min)));
+    }
+    else if(id == GESTURE_POINTING_TL ||
+            id == GESTURE_POINTING_L ||
+            id == GESTURE_POINTING_TLF ||
+            id == GESTURE_POINTING_LF)
     {
         return ( (RightX <= rs_rh_x_max) &&
                 (RightX >= rs_rh_x_min ) &&
@@ -93,19 +106,6 @@ bool Gesture::isWithinThreshold(jointCoords_t jointCoords)
                 (RightZ <= rs_rh_z_max) &&
                 (RightZ >= rs_rh_z_min) &&
                 ((LeftY < ls_lh_y_max) || (LeftY > ls_lh_y_min)));
-    }
-    else if(id == GESTURE_POINTING_TL ||
-            id == GESTURE_POINTING_L ||
-            id == GESTURE_POINTING_TLF ||
-            id == GESTURE_POINTING_LF)
-    {
-        return ( (LeftX <= ls_lh_x_max) &&
-                 (LeftX >= ls_lh_x_min ) &&
-                 (LeftY <= ls_lh_y_max) &&
-                 (LeftY >= ls_lh_y_min) &&
-                 (LeftZ <= ls_lh_z_max) &&
-                 (LeftZ >= ls_lh_z_min) &&
-                 ((RightY < rs_rh_y_max) || (RightY > rs_rh_y_min)));
     }
     else if(id == GESTURE_STOP)
     {
