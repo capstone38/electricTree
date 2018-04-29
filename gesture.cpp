@@ -2,16 +2,6 @@
 #include <iostream>
 
 
-/*Gesture::Gesture::Gesture::Gesture(gestures_e id,
-                 int ls_lh_x_min,
-                 int ls_lh_x_max,
-                 int ls_lh_y_min,
-                 int ls_lh_y_max,
-                 int rs_rh_x_min,
-                 int rs_rh_x_max,
-                 int rs_rh_y_min,
-                 int rs_rh_y_max)
-*/
 using namespace std;
 
 void Gesture::resetGestureState(void)
@@ -71,6 +61,72 @@ bool Gesture::detect(jointCoords_t jointCoords)
 
     return false;
 }
+
+bool Gesture::detectDynamic(jointCoords_t jointCoords) {
+
+    cout << "Gesture " << id << " state " << state_d.dynamic_gesture_state << endl;
+
+    switch(state_d.dynamic_gesture_state)
+    {
+    case state_d.DYNAMIC_GESTURE_STATE_INIT:
+        if( isWithinThreshold(jointCoords) )
+        {
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_MAX_1;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        break;
+
+    case state_d.DYNAMIC_GESTURE_STATE_MAX_1:
+        if( isWithinThreshold(jointCoords) )
+        {
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_MIN_1;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        else if(state_d.cyclesInState_dynamic_gesture_detecting >= WAVING_TIMEOUT){
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_INIT;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        else
+        {
+            state_d.cyclesInState_dynamic_gesture_detecting++;
+        }
+        break;
+
+    case state_d.DYNAMIC_GESTURE_STATE_MIN_1:
+        if( isWithinThreshold(jointCoords) )
+        {
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_MAX_2;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        else if(state_d.cyclesInState_dynamic_gesture_detecting >= WAVING_TIMEOUT){
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_INIT;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        else
+        {
+            state_d.cyclesInState_dynamic_gesture_detecting++;
+        }
+        break;
+
+    case state_d.DYNAMIC_GESTURE_STATE_MAX_2:
+        if( isWithinThreshold(jointCoords) )
+        {
+            resetGestureState();
+            return true;
+        }
+        else if(state_d.cyclesInState_dynamic_gesture_detecting >= WAVING_TIMEOUT){
+            state_d.dynamic_gesture_state = state_d.DYNAMIC_GESTURE_STATE_INIT;
+            state_d.cyclesInState_dynamic_gesture_detecting = 0;
+        }
+        else
+        {
+            state_d.cyclesInState_dynamic_gesture_detecting++;
+        }
+        break;
+    }
+    return false;
+}
+
 
 bool Gesture::isWithinThreshold(jointCoords_t jointCoords)
 {

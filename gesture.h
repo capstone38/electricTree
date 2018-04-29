@@ -76,6 +76,19 @@ struct static_gesture_states_t
     int cyclesInState_static_gesture_lost;
 };
 
+struct dynamic_gesture_states_t
+{
+    enum dynamic_gesture_states_e
+    {
+        DYNAMIC_GESTURE_STATE_INIT,
+        DYNAMIC_GESTURE_STATE_MAX_1,
+        DYNAMIC_GESTURE_STATE_MIN_1,
+        DYNAMIC_GESTURE_STATE_MAX_2,
+    } dynamic_gesture_state;
+    int cyclesInState_dynamic_gesture_detecting;
+    int cyclesInState_dynamic_gesture_lost;
+};
+
 class Gesture
 {
 private:
@@ -92,6 +105,7 @@ private:
     int rs_rh_y_max;
     int rs_rh_z_min;
     int rs_rh_z_max;
+    struct dynamic_gesture_states_t state_d;
 
 
 public:
@@ -153,6 +167,7 @@ public:
 
     void resetGestureState(void);
     bool detect(jointCoords_t jointCoords);
+    bool detectDynamic(jointCoords_t jointCoords);
     bool isWithinThreshold(jointCoords_t jointCoords);
 
     gestures_e id;
