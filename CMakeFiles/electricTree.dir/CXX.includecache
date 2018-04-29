@@ -6,6 +6,18 @@
 
 #IncludeRegexTransform: 
 
+/home/capstone38/Desktop/electricTree/dynamicgesture.cpp
+dynamicgesture.h
+/home/capstone38/Desktop/electricTree/dynamicgesture.h
+iostream
+-
+
+/home/capstone38/Desktop/electricTree/dynamicgesture.h
+gesture.h
+/home/capstone38/Desktop/electricTree/gesture.h
+vector
+-
+
 /home/capstone38/Desktop/electricTree/gesture.cpp
 gesture.h
 /home/capstone38/Desktop/electricTree/gesture.h
@@ -45,6 +57,8 @@ string
 -
 gesture.h
 /home/capstone38/Desktop/electricTree/gesture.h
+dynamicgesture.h
+/home/capstone38/Desktop/electricTree/dynamicgesture.h
 
 /home/capstone38/Desktop/realsense/realsense_samples/samples/common/console_display/pt_console_display.hpp
 set

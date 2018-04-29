@@ -161,6 +161,33 @@ electricTree/preinstall:
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/preinstall
 .PHONY : electricTree/preinstall
 
+dynamicgesture.o: dynamicgesture.cpp.o
+
+.PHONY : dynamicgesture.o
+
+# target to build an object file
+dynamicgesture.cpp.o:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/dynamicgesture.cpp.o
+.PHONY : dynamicgesture.cpp.o
+
+dynamicgesture.i: dynamicgesture.cpp.i
+
+.PHONY : dynamicgesture.i
+
+# target to preprocess a source file
+dynamicgesture.cpp.i:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/dynamicgesture.cpp.i
+.PHONY : dynamicgesture.cpp.i
+
+dynamicgesture.s: dynamicgesture.cpp.s
+
+.PHONY : dynamicgesture.s
+
+# target to generate assembly for a file
+dynamicgesture.cpp.s:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/dynamicgesture.cpp.s
+.PHONY : dynamicgesture.cpp.s
+
 gesture.o: gesture.cpp.o
 
 .PHONY : gesture.o
@@ -227,6 +254,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... install/local"
 	@echo "... rebuild_cache"
+	@echo "... dynamicgesture.o"
+	@echo "... dynamicgesture.i"
+	@echo "... dynamicgesture.s"
 	@echo "... gesture.o"
 	@echo "... gesture.i"
 	@echo "... gesture.s"

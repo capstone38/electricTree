@@ -128,6 +128,72 @@ bool Gesture::detectDynamic(jointCoords_t jointCoords) {
     return false;
 }
 
+bool Gesture::isWithinThreshold(jointCoords_t jointCoords)
+{
+    int LeftX = jointCoords.Lshoulderx - jointCoords.Lhandx;
+    int LeftY = jointCoords.Lshouldery - jointCoords.Lhandy;
+    int LeftZ = jointCoords.Lshoulderz - jointCoords.Lhandz;
+    int RightX = jointCoords.Rshoulderx - jointCoords.Rhandx;
+    int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
+    int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
+
+    if(id == GESTURE_POINTING_TRF ||
+       id == GESTURE_POINTING_RF  ||
+       id == GESTURE_POINTING_TR   ||
+       id == GESTURE_POINTING_R    ||
+       id == GESTURE_WAVING_R
+            )
+    {
+        return ( (LeftX <= ls_lh_x_max) &&
+                 (LeftX >= ls_lh_x_min ) &&
+                 (LeftY <= ls_lh_y_max) &&
+                 (LeftY >= ls_lh_y_min) &&
+                 (LeftZ <= ls_lh_z_max) &&
+                 (LeftZ >= ls_lh_z_min) &&
+                 ((RightY < rs_rh_y_max) || (RightY > rs_rh_y_min)));
+    }
+    else if(id == GESTURE_POINTING_TL ||
+            id == GESTURE_POINTING_L ||
+            id == GESTURE_POINTING_TLF ||
+            id == GESTURE_POINTING_LF  ||
+            id == GESTURE_WAVING_L
+            )
+    {
+        return ( (RightX <= rs_rh_x_max) &&
+                (RightX >= rs_rh_x_min ) &&
+                (RightY <= rs_rh_y_max) &&
+                (RightY >= rs_rh_y_min) &&
+                (RightZ <= rs_rh_z_max) &&
+                (RightZ >= rs_rh_z_min) &&
+                ((LeftY < ls_lh_y_max) || (LeftY > ls_lh_y_min)));
+    }
+    else if(id == GESTURE_STOP)
+    {
+        return ((LeftX >= ls_lh_x_min) &&
+                (LeftX <= ls_lh_x_max) &&
+                (LeftY >= ls_lh_y_min) &&
+                (LeftY <= ls_lh_y_max) &&
+                (jointCoords.Lhandz <= ls_lh_z_max));
+    }
+    else
+    {
+        return (     (LeftX <= ls_lh_x_max) &&
+                     (LeftX >= ls_lh_x_min ) &&
+                     (LeftY <= ls_lh_y_max) &&
+                     (LeftY >= ls_lh_y_min) &&
+                     (LeftZ <= ls_lh_z_max) &&
+                     (LeftZ >= ls_lh_z_min) &&
+                     (RightX <= rs_rh_x_max) &&
+                     (RightX >= rs_rh_x_min ) &&
+                     (RightY <= rs_rh_y_max) &&
+                     (RightY >= rs_rh_y_min) &&
+                     (RightZ <= rs_rh_z_max) &&
+                     (RightZ >= rs_rh_z_min)
+                     );
+    }
+}
+
+
 static_gesture_states_e Gesture::getState(void)
 {
     return state.static_gesture_state;

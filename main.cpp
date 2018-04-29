@@ -81,7 +81,8 @@ int main(int argc, char** argv)
 
 
 
-    vector<Gesture> gesturelist = defineGestures();
+    vector<Gesture> staticgesturelist = defineStaticGestures();
+    vector<DynamicGesture> dynamicgesturelist = defineDynamicGestures();
 
     updateNumVideos(numVideos);
 
@@ -293,7 +294,7 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, gesturelist, gesture_states);
+                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist, gesture_states);
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
@@ -329,7 +330,7 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, gesturelist, gesture_states);
+                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist, gesture_states);
 
                 // Implement cancel gesture.
                 if(gestureDetected == GESTURE_CANCEL)
@@ -418,7 +419,7 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
     return false;
 }
 
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture>& gesturelist, gesture_states_t& gesture_states)
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture>& staticgesturelist, vector<DynamicGesture>& dynamicgesturelist, gesture_states_t& gesture_states)
 {
     int numDetectedJoints = personJoints->QueryNumJoints();
     std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
@@ -450,18 +451,38 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     jointCoords.Spiney = skeletonPoints.at(3).image.y;
     jointCoords.Spinez = skeletonPoints.at(3).world.z;
 
-    for(Gesture &g : gesturelist)
+    gestures_e detectedGesture = GESTURE_UNDEFINED;
+
+    for(Gesture &g : staticgesturelist)
     {
         if(g.detect(jointCoords))
         {
-            return g.id;
-        }
-
-        if(g.detectDynamic(jointCoords))
-        {
-            return g.id;
+            detectedGesture = g.id;
         }
     }
+
+    for(DynamicGesture &g : dynamicgesturelist)
+    {
+        if(g.detect(jointCoords))
+        {
+            detectedGesture = g.id;
+        }
+    }
+
+    if(detectedGesture != GESTURE_UNDEFINED)
+    {
+        for(Gesture &g : staticgesturelist)
+        {
+            g.resetGestureState();
+        }
+
+        for(DynamicGesture &g : dynamicgesturelist)
+        {
+            g.resetStates();
+        }
+    }
+
+
 
     int LeftX = jointCoords.Lshoulderx - jointCoords.Lhandx;
     int LeftY = jointCoords.Lshouldery - jointCoords.Lhandy;
@@ -470,8 +491,8 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
     int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
     int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
 
+/*
     // RIGHT WAVING
-    cout << "Checking waving gesture" << endl;
     switch(gesture_states.waving_r_gesture_state)
     {
     case gesture_states.WAVING_R_INIT:
@@ -538,7 +559,6 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
                 ((RightY > 50) || (RightY < 20)))
         {
             gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-            cout << "WAVING DETECTED" << endl;
             return GESTURE_WAVING_R;
         }
         else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT) {
@@ -555,8 +575,8 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         break;
     }
 
-
-
+*/
+    return detectedGesture;
 
     /*
 
@@ -1255,7 +1275,7 @@ void resetGestureStates(gesture_states_t &gesture_states)
     gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
 }
 
-vector<Gesture> defineGestures(void)
+vector<Gesture> defineStaticGestures(void)
 {
     vector<Gesture> out;
 
@@ -1441,3 +1461,59 @@ vector<Gesture> defineGestures(void)
 
     return out;
 }
+
+vector<DynamicGesture> defineDynamicGestures(void)
+{
+    vector<DynamicGesture> out;
+
+    DynamicGesture waving_r(GESTURE_WAVING_R);
+
+    Gesture waving_r_int_0(GESTURE_WAVING_R,
+                 (int)40,           // LeftX_min
+                 (int)90,          // LeftX_max
+                 (int)-20,           // LeftY_min
+                 (int)40,          // LeftY_max
+                 (int)0,         // RightX_min
+                 (int)-50,           // RightX_max
+                 (int)50,          // RightY_min
+                 (int)20);         // RightY_max
+    waving_r.addIntermediateGesture(waving_r_int_0);
+
+    Gesture waving_r_int_1(GESTURE_WAVING_R,
+                 (int)-20,           // LeftX_min
+                 (int)40,          // LeftX_max
+                 (int)-20,           // LeftY_min
+                 (int)40,          // LeftY_max
+                 (int)0,         // RightX_min
+                 (int)-50,           // RightX_max
+                 (int)50,          // RightY_min
+                 (int)20);         // RightY_max
+    waving_r.addIntermediateGesture(waving_r_int_1);
+
+    Gesture waving_r_int_2(GESTURE_WAVING_R,
+                 (int)40,           // LeftX_min
+                 (int)90,          // LeftX_max
+                 (int)-20,           // LeftY_min
+                 (int)40,          // LeftY_max
+                 (int)0,         // RightX_min
+                 (int)-50,           // RightX_max
+                 (int)50,          // RightY_min
+                 (int)20);         // RightY_max
+    waving_r.addIntermediateGesture(waving_r_int_2);
+
+    Gesture waving_r_int_3(GESTURE_WAVING_R,
+                 (int)-20,           // LeftX_min
+                 (int)40,          // LeftX_max
+                 (int)-20,           // LeftY_min
+                 (int)40,          // LeftY_max
+                 (int)0,         // RightX_min
+                 (int)-50,           // RightX_max
+                 (int)50,          // RightY_min
+                 (int)20);         // RightY_max
+    waving_r.addIntermediateGesture(waving_r_int_3);
+
+    out.push_back(waving_r);
+
+    return out;
+}
+

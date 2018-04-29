@@ -4,6 +4,7 @@
 #include <string>
 
 #include "gesture.h"
+#include "dynamicgesture.h"
 
 #define CYCLES_PER_SECOND 30
 #define SEC_TO_CYCLES(a) a*CYCLES_PER_SECOND
@@ -233,7 +234,7 @@ int pointing_l_count;
 
 
 
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture> &gesturelist, gesture_states_t& gesture_states);
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture> &staticgesturelist, vector<DynamicGesture>& dynamicgesturelist, gesture_states_t& gesture_states);
 void printJointCoords(jointCoords_t &jc);
 void playContent(gestures_e gesture, bool quit);
 void resetGestureStates(gesture_states_t &gesture_states);
@@ -250,7 +251,8 @@ int totalCount;  // "TOTAL: X","TODAY_TOTAL_COUNT: X", "OVERALL_TOTAL_COUNT: X"
 string gesture; // "WAVING_R:", "USAIN:", ...
 int gestureCount;   // "WAVING_R: X", "USAIN: X", ...
 
-vector<Gesture> defineGestures(void);
+vector<Gesture> defineStaticGestures(void);
+vector<DynamicGesture> defineDynamicGestures(void);
 
 #define VLC_CMD std::string("cvlc -f --play-and-exit --no-video-title-show")
 #define VIDEOS_PATH std::string("file:///home/zac/electricTree/videos/")

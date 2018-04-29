@@ -4,6 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/capstone38/Desktop/electricTree/dynamicgesture.cpp" "/home/capstone38/Desktop/electricTree/CMakeFiles/electricTree.dir/dynamicgesture.cpp.o"
   "/home/capstone38/Desktop/electricTree/gesture.cpp" "/home/capstone38/Desktop/electricTree/CMakeFiles/electricTree.dir/gesture.cpp.o"
   "/home/capstone38/Desktop/electricTree/main.cpp" "/home/capstone38/Desktop/electricTree/CMakeFiles/electricTree.dir/main.cpp.o"
   )
