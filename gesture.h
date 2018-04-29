@@ -64,14 +64,16 @@ enum gestures_e
     GESTURE_UNDEFINED
 };
 
+enum static_gesture_states_e
+{
+    STATIC_GESTURE_STATE_INIT,
+    STATIC_GESTURE_STATE_DETECTING,
+    STATIC_GESTURE_STATE_LOST
+};
+
 struct static_gesture_states_t
 {
-    enum static_gesture_states_e
-    {
-        STATIC_GESTURE_STATE_INIT,
-        STATIC_GESTURE_STATE_DETECTING,
-        STATIC_GESTURE_STATE_LOST
-    } static_gesture_state;
+    static_gesture_states_e static_gesture_state;
     int cyclesInState_static_gesture_detecting;
     int cyclesInState_static_gesture_lost;
 };
@@ -169,6 +171,8 @@ public:
     bool detect(jointCoords_t jointCoords);
     bool detectDynamic(jointCoords_t jointCoords);
     bool isWithinThreshold(jointCoords_t jointCoords);
+
+    static_gesture_states_e getState(void);
 
     gestures_e id;
 
