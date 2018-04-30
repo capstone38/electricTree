@@ -15,7 +15,7 @@ static int totalCount;  // "TOTAL: X","TODAY_TOTAL_COUNT: X", "OVERALL_TOTAL_COU
 static string gesture; // "WAVING_R:", "USAIN:", ...
 static int gestureCount;   // "WAVING_R: X", "USAIN: X", ...
 
-#define ENABLE_ANALYTICS true
+#define ENABLE_ANALYTICS false
 
 struct analytics_t
 {
