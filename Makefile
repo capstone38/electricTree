@@ -161,6 +161,33 @@ electricTree/preinstall:
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/preinstall
 .PHONY : electricTree/preinstall
 
+analytics.o: analytics.cpp.o
+
+.PHONY : analytics.o
+
+# target to build an object file
+analytics.cpp.o:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/analytics.cpp.o
+.PHONY : analytics.cpp.o
+
+analytics.i: analytics.cpp.i
+
+.PHONY : analytics.i
+
+# target to preprocess a source file
+analytics.cpp.i:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/analytics.cpp.i
+.PHONY : analytics.cpp.i
+
+analytics.s: analytics.cpp.s
+
+.PHONY : analytics.s
+
+# target to generate assembly for a file
+analytics.cpp.s:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/analytics.cpp.s
+.PHONY : analytics.cpp.s
+
 dynamicgesture.o: dynamicgesture.cpp.o
 
 .PHONY : dynamicgesture.o
@@ -215,6 +242,33 @@ gesture.cpp.s:
 	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesture.cpp.s
 .PHONY : gesture.cpp.s
 
+gesturedefinitions.o: gesturedefinitions.cpp.o
+
+.PHONY : gesturedefinitions.o
+
+# target to build an object file
+gesturedefinitions.cpp.o:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesturedefinitions.cpp.o
+.PHONY : gesturedefinitions.cpp.o
+
+gesturedefinitions.i: gesturedefinitions.cpp.i
+
+.PHONY : gesturedefinitions.i
+
+# target to preprocess a source file
+gesturedefinitions.cpp.i:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesturedefinitions.cpp.i
+.PHONY : gesturedefinitions.cpp.i
+
+gesturedefinitions.s: gesturedefinitions.cpp.s
+
+.PHONY : gesturedefinitions.s
+
+# target to generate assembly for a file
+gesturedefinitions.cpp.s:
+	$(MAKE) -f CMakeFiles/electricTree.dir/build.make CMakeFiles/electricTree.dir/gesturedefinitions.cpp.s
+.PHONY : gesturedefinitions.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -254,12 +308,18 @@ help:
 	@echo "... edit_cache"
 	@echo "... install/local"
 	@echo "... rebuild_cache"
+	@echo "... analytics.o"
+	@echo "... analytics.i"
+	@echo "... analytics.s"
 	@echo "... dynamicgesture.o"
 	@echo "... dynamicgesture.i"
 	@echo "... dynamicgesture.s"
 	@echo "... gesture.o"
 	@echo "... gesture.i"
 	@echo "... gesture.s"
+	@echo "... gesturedefinitions.o"
+	@echo "... gesturedefinitions.i"
+	@echo "... gesturedefinitions.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

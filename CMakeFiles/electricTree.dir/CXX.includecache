@@ -6,6 +6,20 @@
 
 #IncludeRegexTransform: 
 
+/home/capstone38/Desktop/electricTree/analytics.cpp
+analytics.h
+/home/capstone38/Desktop/electricTree/analytics.h
+
+/home/capstone38/Desktop/electricTree/analytics.h
+gesture.h
+/home/capstone38/Desktop/electricTree/gesture.h
+iostream
+-
+string
+-
+fstream
+-
+
 /home/capstone38/Desktop/electricTree/dynamicgesture.cpp
 dynamicgesture.h
 /home/capstone38/Desktop/electricTree/dynamicgesture.h
@@ -25,6 +39,24 @@ iostream
 -
 
 /home/capstone38/Desktop/electricTree/gesture.h
+
+/home/capstone38/Desktop/electricTree/gesturedefinitions.cpp
+librealsense/rs.hpp
+-
+rs_sdk.h
+/home/capstone38/Desktop/electricTree/rs_sdk.h
+version.h
+/home/capstone38/Desktop/electricTree/version.h
+pt_utils.hpp
+/home/capstone38/Desktop/electricTree/pt_utils.hpp
+vector
+-
+gesture.h
+/home/capstone38/Desktop/electricTree/gesture.h
+dynamicgesture.h
+/home/capstone38/Desktop/electricTree/dynamicgesture.h
+main.h
+/home/capstone38/Desktop/electricTree/main.h
 
 /home/capstone38/Desktop/electricTree/main.cpp
 iostream
@@ -59,6 +91,8 @@ gesture.h
 /home/capstone38/Desktop/electricTree/gesture.h
 dynamicgesture.h
 /home/capstone38/Desktop/electricTree/dynamicgesture.h
+analytics.h
+/home/capstone38/Desktop/electricTree/analytics.h
 
 /home/capstone38/Desktop/realsense/realsense_samples/samples/common/console_display/pt_console_display.hpp
 set

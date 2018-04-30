@@ -2,6 +2,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/electricTree.dir/main.cpp.o"
   "CMakeFiles/electricTree.dir/gesture.cpp.o"
   "CMakeFiles/electricTree.dir/dynamicgesture.cpp.o"
+  "CMakeFiles/electricTree.dir/analytics.cpp.o"
+  "CMakeFiles/electricTree.dir/gesturedefinitions.cpp.o"
   "electricTree.pdb"
   "electricTree"
   "electricTree.pdb"

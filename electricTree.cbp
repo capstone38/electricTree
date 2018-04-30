@@ -130,6 +130,12 @@
          </MakeCommands>
       </Target>
       </Build>
+      <Unit filename="/home/capstone38/Desktop/electricTree/analytics.cpp">
+         <Option target="electricTree"/>
+      </Unit>
+      <Unit filename="/home/capstone38/Desktop/electricTree/analytics.h">
+         <Option target="electricTree"/>
+      </Unit>
       <Unit filename="/home/capstone38/Desktop/electricTree/dynamicgesture.cpp">
          <Option target="electricTree"/>
       </Unit>
@@ -140,6 +146,9 @@
          <Option target="electricTree"/>
       </Unit>
       <Unit filename="/home/capstone38/Desktop/electricTree/gesture.h">
+         <Option target="electricTree"/>
+      </Unit>
+      <Unit filename="/home/capstone38/Desktop/electricTree/gesturedefinitions.cpp">
          <Option target="electricTree"/>
       </Unit>
       <Unit filename="/home/capstone38/Desktop/electricTree/main.cpp">

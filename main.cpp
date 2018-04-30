@@ -26,17 +26,9 @@ using namespace boost::interprocess;
 // Version number of the samples
 extern constexpr auto rs_sample_version = concat("VERSION: ",RS_SAMPLE_VERSION_STR);
 
-vector<int> jumpVector;
-int jumpCount = 0;
-int jumpStartValue;
-
-
-bool analyticsOn = false;
-int result; // file renaming and removing error checking
-char filename[] = "/home/capstone38/Desktop/electricTree/analytics.txt";
-char temp_filename[] = "/home/capstone38/Desktop/electricTree/temp_analytics.txt";
-
 int numVideos[GESTURE_UNDEFINED];
+
+struct analytics_t analytics_counts = analytics_init();
 
 int main(int argc, char** argv)
 {
@@ -51,16 +43,10 @@ int main(int argc, char** argv)
     rs_context *ctx = rs_create_context(RS_API_VERSION, 0);
     rs_device *camera = rs_get_device(ctx, 0, 0);
 
-
-
     rs_set_device_option(camera, RS_OPTION_COLOR_ENABLE_AUTO_EXPOSURE, 1, 0);
-
     rs_set_device_option(camera, RS_OPTION_R200_AUTO_EXPOSURE_MEAN_INTENSITY_SET_POINT, 1806, 0); //400
-
-
     rs_set_device_option(camera, RS_OPTION_R200_LR_GAIN  , 400, 0); //400
     rs_set_device_option(camera, RS_OPTION_R200_LR_EXPOSURE , 164, 0); //164
-
 
     rs_option options[11];
 
@@ -76,15 +62,16 @@ int main(int argc, char** argv)
     options[9] = RS_OPTION_R200_DEPTH_CONTROL_NEIGHBOR_THRESHOLD;
     options[10] = RS_OPTION_R200_DEPTH_CONTROL_LR_THRESHOLD;
 
-
     rs_reset_device_options_to_default(camera, options, 11, 0);
-
 
 
     vector<Gesture> staticgesturelist = defineStaticGestures();
     vector<DynamicGesture> dynamicgesturelist = defineDynamicGestures();
 
     updateNumVideos(numVideos);
+
+
+
 
     // Initializing Camera and Person Tracking modules
     if(pt_utils.init_camera(actualModuleConfig) != rs::core::status_no_error)
@@ -131,8 +118,6 @@ int main(int argc, char** argv)
     int cyclesSpentIdle = 0;
     int numTracked;
     gestures_e gestureDetected = GESTURE_UNDEFINED;
-    gesture_states_t gesture_states;
-    resetGestureStates(gesture_states);
     int cyclesSpentDetected = 0;
 
     int pid_in_center = INVALID_PERSONID;
@@ -140,34 +125,16 @@ int main(int argc, char** argv)
 
     bool shouldCancel = false;
 
-    // move intialization to diff file
-    powerpose_count = 0;
-    t_count = 0;
-    victory_count = 0;
-    usain_count = 0;
-    stop_count = 0;
-    flying_count = 0;
-    waving_r_count = 0;
-    waving_l_count = 0;
-    pointing_trf_count = 0;
-    pointing_rf_count = 0;
-    pointing_tlf_count = 0;
-    pointing_lf_count = 0;
-    pointing_tr_count = 0;
-    pointing_r_count = 0;
-    pointing_tl_count = 0;
-    pointing_l_count = 0;
+
 
     // Start main loop
     while(!pt_utils.user_request_exit())
     {
-
-
         // Check for cancel request from system
         bool shouldQuit = false;
         mq.try_receive(&shouldQuit, sizeof(shouldQuit), recvd_size, priority);
         if(shouldQuit) {
-            updateAnalytics(analyticsOn, gesture_states);
+            updateAnalytics(analytics_counts);
             break;
         }
 
@@ -223,16 +190,12 @@ int main(int argc, char** argv)
                 {
                     // If no one in center, indicate so.
                     pid_in_center = INVALID_PERSONID;
-                    jumpVector.clear();
-                    jumpCount=0;
                 }
             }
             else
             {
                 // If we no longer see a person, back to idle state
                 pid_in_center = INVALID_PERSONID;
-                jumpVector.clear();
-                jumpCount=0;
             }
         }
 
@@ -294,7 +257,7 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist, gesture_states);
+                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist);
 
                 if(gestureDetected != GESTURE_UNDEFINED && gestureDetected != GESTURE_CANCEL)
                 {
@@ -330,14 +293,12 @@ int main(int argc, char** argv)
                 std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
                 personJoints->QueryJoints(skeletonPoints.data());
 
-                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist, gesture_states);
+                gestureDetected = detectGestures(personJoints, staticgesturelist, dynamicgesturelist);
 
                 // Implement cancel gesture.
                 if(gestureDetected == GESTURE_CANCEL)
                 {
                     shouldCancel = true;
-                    //system("killall vlc");
-
                 }
             }
 
@@ -350,20 +311,16 @@ int main(int argc, char** argv)
                     thread video(playContent, GESTURE_READY, shouldQuit);
                     video.detach();
                 }
-
-
             }
             break;
 
 
         case STATE_IDLEVIDEO_START:
             // Issue system call to playback idle video content in a detached thread
-
-            //do
         {
             thread idlevideo(playContent, GESTURE_IDLE, shouldQuit);
             idlevideo.detach();
-        } //while(waitUntilContentStart(GESTURE_IDLE));
+        }
 
             cyclesSpentDetected = 0;
 
@@ -399,7 +356,6 @@ int main(int argc, char** argv)
 
     system("killall vlc");
 
-
     pt_utils.stop_camera();
     actualModuleConfig.projection->release();
     return 0;
@@ -419,11 +375,10 @@ bool personIsInCenter(Intel::RealSense::PersonTracking::PersonTrackingData::Poin
     return false;
 }
 
-gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture>& staticgesturelist, vector<DynamicGesture>& dynamicgesturelist, gesture_states_t& gesture_states)
+gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints *personJoints, vector<Gesture>& staticgesturelist, vector<DynamicGesture>& dynamicgesturelist)
 {
     int numDetectedJoints = personJoints->QueryNumJoints();
     std::vector<Intel::RealSense::PersonTracking::PersonTrackingData::PersonJoints::SkeletonPoint> skeletonPoints(personJoints->QueryNumJoints());
-
 
     personJoints->QueryJoints(skeletonPoints.data());
 
@@ -482,361 +437,10 @@ gestures_e detectGestures(Intel::RealSense::PersonTracking::PersonTrackingData::
         }
     }
 
+    // use for debug:
+    //printJointCoords(jointCoords);
 
-
-    int LeftX = jointCoords.Lshoulderx - jointCoords.Lhandx;
-    int LeftY = jointCoords.Lshouldery - jointCoords.Lhandy;
-    int LeftZ = jointCoords.Lshoulderz - jointCoords.Lhandz;
-    int RightX = jointCoords.Rshoulderx - jointCoords.Rhandx;
-    int RightY = jointCoords.Rshouldery - jointCoords.Rhandy;
-    int RightZ = jointCoords.Rshoulderz - jointCoords.Rhandz;
-
-/*
-    // RIGHT WAVING
-    switch(gesture_states.waving_r_gesture_state)
-    {
-    case gesture_states.WAVING_R_INIT:
-        if((LeftX >= 40) &&
-                (LeftX <= 90) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_1;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MAX_1:
-        if((LeftX >= -20) &&
-                (LeftX <= 40) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MIN_1;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MIN_1:
-        if((LeftX >= 40) &&
-                (LeftX <= 90) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_2;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MAX_2:
-        if((LeftX >= -20) &&
-                (LeftX <= 40) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-            return GESTURE_WAVING_R;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT) {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-*/
     return detectedGesture;
-
-    /*
-
-    // FLYING GESTURE
-    switch(gesture_states.flying_gesture_state)
-    {
-    case gesture_states.FLYING_INIT:
-        if(
-                (LeftY >= -30) &&
-                (LeftY <= 40) && //15
-                (RightY >= -10) &&
-                (RightY <= 50))
-        {
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_1;
-        }
-        break;
-
-    case gesture_states.FLYING_MAX_1:
-        if((LeftY >= -110) &&
-                (LeftY <= -60) &&
-                (RightY >= -90) &&
-                (RightY <= -50))
-        {
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_MIN_1;
-        }
-        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_flying++;
-        }
-        break;
-
-    case gesture_states.FLYING_MIN_1:
-        if(
-                (LeftY >= -30) &&
-                (LeftY <= 40) && //15
-                (RightY >= -10) &&
-                (RightY <= 50))
-        {
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_MAX_2;
-        }
-        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_flying++;
-        }
-        break;
-
-    case gesture_states.FLYING_MAX_2:
-        if((LeftY >= -110) &&
-                (LeftY <= -60) &&
-                (RightY >= -90) &&
-                (RightY <= -50))
-        {
-            gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
-            return GESTURE_FLYING;
-        }
-        else if(gesture_states.cyclesInState_flying >= FLYING_TIMEOUT){
-            gesture_states.cyclesInState_flying = 0;
-            gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_flying++;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    // RIGHT WAVING
-    switch(gesture_states.waving_r_gesture_state)
-    {
-    case gesture_states.WAVING_R_INIT:
-        if((LeftX >= 40) &&
-                (LeftX <= 90) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_1;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MAX_1:
-        if((LeftX >= -20) &&
-                (LeftX <= 40) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MIN_1;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MIN_1:
-        if((LeftX >= 40) &&
-                (LeftX <= 90) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_MAX_2;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    case gesture_states.WAVING_R_MAX_2:
-        if((LeftX >= -20) &&
-                (LeftX <= 40) &&
-                (LeftY >= -20) && // 10
-                (LeftY <= 40) &&
-                ((RightX > 0) || (RightX < -50)) &&
-                ((RightY > 50) || (RightY < 20)))
-        {
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-            return GESTURE_WAVING_R;
-        }
-        else if(gesture_states.cyclesInState_waving_r >= WAVING_TIMEOUT) {
-            gesture_states.cyclesInState_waving_r = 0;
-            gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_r++;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    // LEFT WAVING
-
-    switch(gesture_states.waving_l_gesture_state)
-    {
-    case gesture_states.WAVING_L_INIT:
-        //        if((RightX >= -70) &&
-        //                (RightX <= -30) &&
-        //                (RightY >= -10) &&
-        //                (RightY <= 70))
-        //        {
-        if((RightX >= -70) &&
-                (RightX <= -30) &&
-                (RightY >= -20) &&
-                (RightY <= 40) &&
-                ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftY > 50) || (LeftY < 0)))
-        {
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MAX_1;
-        }
-        break;
-
-    case gesture_states.WAVING_L_MAX_1:
-        //        if((RightX >= -30) &&
-        //                (RightX <= 10) &&
-        //                (RightY >= -10) &&
-        //                (RightY <= 70))
-        //        {
-        if((RightX >= -60) &&
-                (RightX <= 0) &&
-                (RightY >= -20) &&
-                (RightY <= 50) &&
-                ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftY > 50) || (LeftY < 0)))
-        {
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MIN_1;
-        }
-        else if(gesture_states.cyclesInState_waving_l >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_l++;
-        }
-        break;
-
-    case gesture_states.WAVING_L_MIN_1:
-        if((RightX >= -70) &&
-                (RightX <= -30) &&
-                (RightY >= -20) &&
-                (RightY <= 40) &&
-                ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftY > 50) || (LeftY < 0)))
-        {
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_MAX_2;
-        }
-        else if(gesture_states.cyclesInState_waving_l >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_l++;
-        }
-        break;
-
-    case gesture_states.WAVING_L_MAX_2:
-        if((RightX >= -60) &&
-                (RightX <= 0) &&
-                (RightY >= -20) &&
-                (RightY <= 50) &&
-                ((LeftX > 70) || (LeftX < 0)) &&
-                ((LeftY > 50) || (LeftY < 0)))
-        {
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
-            return GESTURE_WAVING_L;
-        }
-        else if(gesture_states.cyclesInState_waving_l >= WAVING_TIMEOUT){
-            gesture_states.cyclesInState_waving_l = 0;
-            gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
-        }
-        else
-        {
-            gesture_states.cyclesInState_waving_l++;
-        }
-        break;
-
-    default:
-        break;
-    }
-*/
-    printJointCoords(jointCoords);
-
-    return GESTURE_UNDEFINED;
 }
 
 void printJointCoords(jointCoords_t& jc)
@@ -886,63 +490,63 @@ void playContent(gestures_e gesture, bool quit)
     {
     case GESTURE_VICTORY:
         title.assign("victory");
-        victory_count++;
+        analytics_counts.victory_count++;
         break;
     case GESTURE_USAIN:
         title.assign("bolt");
-        usain_count++;
+        analytics_counts.usain_count++;
         break;
     case GESTURE_T:
         title.assign("tpose");
-        t_count++;
+        analytics_counts.t_count++;
         break;
     case GESTURE_FLEXING:
         title.assign("flexing");
-        powerpose_count++;
+        analytics_counts.powerpose_count++;
         break;
     case GESTURE_STOP:
         title.assign("stop");
-        stop_count++;
+        analytics_counts.stop_count++;
         break;
     case GESTURE_POINTING_TRF:
         title.assign("toprightforward");
-        pointing_trf_count++;
+        analytics_counts.pointing_trf_count++;
         break;
     case GESTURE_POINTING_RF:
         title.assign("rightforward");
-        pointing_rf_count++;
+        analytics_counts.pointing_rf_count++;
         break;
     case GESTURE_POINTING_TLF:
         title.assign("topleftforward");
-        pointing_tlf_count++;
+        analytics_counts.pointing_tlf_count++;
         break;
     case GESTURE_POINTING_LF:
         title.assign("leftforward");
-        pointing_lf_count++;
+        analytics_counts.pointing_lf_count++;
         break;
     case GESTURE_POINTING_TR:
         title.assign("topright");
-        pointing_tr_count++;
+        analytics_counts.pointing_tr_count++;
         break;
     case GESTURE_POINTING_R:
         title.assign("right");
-        pointing_r_count++;
+        analytics_counts.pointing_r_count++;
         break;
     case GESTURE_POINTING_TL:
         title.assign("topleft");
-        pointing_tl_count++;
+        analytics_counts.pointing_tl_count++;
         break;
     case GESTURE_POINTING_L:
         title.assign("left");
-        pointing_l_count++;
+        analytics_counts.pointing_l_count++;
         break;
     case GESTURE_FLYING:
         title.assign("fly");
-        flying_count++;
+        analytics_counts.flying_count++;
         break;
-    case GESTURE_WAVING_L: //CHANGE TO LEFT WAVING AFTER THE PRESENTATION
+    case GESTURE_WAVING_L:
         title.assign("leftwave");
-        waving_l_count++;
+        analytics_counts.waving_l_count++;
         break;
 
     case GESTURE_IDLE:
@@ -1024,7 +628,6 @@ gestures_e currentVideoType()
     {
         return GESTURE_IDLE;
     }
-    //else if(strlen(buf) == 0)
     else if(strstr(buf, "mov") != NULL || strstr(buf, "mp4") != NULL)
     {
         return GESTURE_USAIN;
@@ -1035,127 +638,7 @@ gestures_e currentVideoType()
     }
 }
 
-void updateAnalytics(bool update, gesture_states_t &gesture_states) {
-    // Update Analytics
-    if(update == true) {
-        bool error_detected_in = false;
-        bool error_detected_out = false;
 
-        ifstream inFile;
-        inFile.open(filename);
-        if(!inFile.is_open()) {
-            error_detected_in = true;
-        }
-
-        ofstream outFile;
-        outFile.open(temp_filename);
-        if(!outFile.is_open()) {
-            error_detected_out = true;
-        }
-
-        if(error_detected_in == false && error_detected_out == true) inFile.close();
-        if(error_detected_in == true && error_detected_out == false) outFile.close();
-
-        if(error_detected_in == false && error_detected_out == false) {
-
-            inFile >> format;
-            outFile << format << endl;
-
-            inFile >> format;
-            outFile << format << endl;
-
-
-            while(inFile >> gesture >> gestureCount >> total >> totalCount) {
-                if(gesture == "USAIN:"){
-                    totalCount += usain_count;
-                    gestureCount = usain_count;
-                }
-                else if (gesture == "FLEXING:") {
-                    totalCount += powerpose_count;
-                    gestureCount = powerpose_count;
-                }
-                else if (gesture == "VICTORY:") {
-                    totalCount += victory_count;
-                    gestureCount = victory_count;
-                }
-                else if (gesture == "TPOSE:") {
-                    totalCount += t_count;
-                    gestureCount = t_count;
-                }
-                else if (gesture == "STOP:") {
-                    totalCount += stop_count;
-                    gestureCount = stop_count;
-                }
-                else if (gesture == "POINTING_TRF:") {
-                    totalCount += pointing_trf_count;
-                    gestureCount = pointing_trf_count;
-                }
-                else if (gesture == "POINTING_RF:") {
-                    totalCount += pointing_rf_count;
-                    gestureCount = pointing_rf_count;
-                }
-                else if (gesture == "POINTING_TLF:") {
-                    totalCount += pointing_tlf_count;
-                    gestureCount = pointing_tlf_count;
-                }
-                else if (gesture == "POINTING_LF:") {
-                    totalCount += pointing_lf_count;
-                    gestureCount = pointing_lf_count;
-                }
-                else if (gesture == "POINTING_TR:") {
-                    totalCount += pointing_tr_count;
-                    gestureCount = pointing_tr_count;
-                }
-                else if (gesture == "POINTING_R:") {
-                    totalCount += pointing_r_count;
-                    gestureCount = pointing_r_count;
-                }
-                else if (gesture == "POINTING_TL:") {
-                    totalCount += pointing_tl_count;
-                    gestureCount = pointing_tl_count;
-                }
-                else if (gesture == "POINTING_L:") {
-                    totalCount += pointing_l_count;
-                    gestureCount = pointing_l_count;
-                }
-                else if (gesture == "FLYING:") {
-                    totalCount += flying_count;
-                    gestureCount = flying_count;
-                }
-                else if (gesture == "WAVING_R:") {
-                    totalCount += waving_r_count;
-                    gestureCount = waving_r_count;
-                }
-                else if (gesture == "WAVING_L:") {
-                    totalCount += waving_l_count;
-                    gestureCount = waving_l_count;
-                }
-
-                // Present day gestures count
-                outFile << gesture << " " << gestureCount << " ";
-
-
-                // Total Count of Gestures to date
-                outFile << total << " " << totalCount << endl;
-            }
-
-            inFile.close();
-            outFile.close();
-
-            result = remove(filename);
-            if(result != 0)
-                perror("Error deleting file");
-            else
-                puts("File successfully deleted");
-
-            result = rename(temp_filename, filename);
-            if(result != 0)
-                perror("Error renaming file");
-            else
-                puts("File successfully renamed");
-        }
-    }
-}
 
 int detectNumVideo(string name)
 {
@@ -1252,268 +735,3 @@ int waitUntilContentStart(gestures_e gesture)
 
     return retval;
 }
-
-void resetGestureStates(gesture_states_t &gesture_states)
-{
-    gesture_states.usain_gesture_state = gesture_states.USAIN_INIT;
-    gesture_states.tpose_gesture_state = gesture_states.TPOSE_INIT;
-    gesture_states.victory_gesture_state = gesture_states.VICTORY_INIT;
-    gesture_states.powerpose_gesture_state = gesture_states.POWERPOSE_INIT;
-    gesture_states.stop_gesture_state = gesture_states.STOP_INIT;
-    gesture_states.pointing_trf_gesture_state = gesture_states.POINTING_TRF_INIT;
-    gesture_states.pointing_rf_gesture_state = gesture_states.POINTING_RF_INIT;
-    gesture_states.pointing_tlf_gesture_state = gesture_states.POINTING_TLF_INIT;
-    gesture_states.pointing_lf_gesture_state = gesture_states.POINTING_LF_INIT;
-    gesture_states.pointing_tr_gesture_state = gesture_states.POINTING_TR_INIT;
-    gesture_states.pointing_r_gesture_state = gesture_states.POINTING_R_INIT;
-    gesture_states.pointing_tl_gesture_state = gesture_states.POINTING_TL_INIT;
-    gesture_states.pointing_l_gesture_state = gesture_states.POINTING_L_INIT;
-    gesture_states.flying_gesture_state = gesture_states.FLYING_INIT;
-    gesture_states.waving_r_gesture_state = gesture_states.WAVING_R_INIT;
-    gesture_states.waving_l_gesture_state = gesture_states.WAVING_L_INIT;
-    gesture_states.jumping_gesture_state = gesture_states.JUMPING_INIT;
-    gesture_states.running_gesture_state = gesture_states.RUNNING_INIT;
-}
-
-vector<Gesture> defineStaticGestures(void)
-{
-    vector<Gesture> out;
-
-    Gesture usain(GESTURE_USAIN,
-                 (int)0,           // LeftX_min
-                 (int)80,          // LeftX_max
-                 (int)-60,         // LeftY_min
-                 (int)30,          // LeftY_max
-                 (int)-100,        // RightX_min
-                 (int)-50,         // RightX_max
-                 (int)20,          // RightY_min
-                 (int)70);         // RightY_max
-    out.push_back(usain);
-
-    Gesture tpose(GESTURE_T,
-                 (int)45,          // LeftX_min
-                 (int)MAXCOORD,    // LeftX_max
-                 (int)-20,         // LeftY_min
-                 (int)20,          // LeftY_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)-45,         // RightX_max
-                 (int)-20,         // RightY_min
-                 (int)20);         // RightY_max
-    out.push_back(tpose);
-
-    Gesture stop(GESTURE_STOP,
-                 (int)-20,         // LeftX_min
-                 (int)40,          // LeftX_max
-                 (int)0,           // LeftY_min
-                 (int)60,          // LeftY_max
-                 (int)0,           // LeftZ_min
-                 (int)1550,        // LeftZ_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)MAXCOORD,    // RightX_max
-                 (int)-MAXCOORD,   // RightY_min
-                 (int)MAXCOORD,    // RightY_max
-                 (int)0,           // RightZ_min
-                 (int)MAXCOORD);   // RightZ_max
-    out.push_back(stop);
-
-    Gesture point_trf(GESTURE_POINTING_TRF,
-                 (int)50,          // LeftX_min
-                 (int)90,          // LeftX_max
-                 (int)50,          // LeftY_min
-                 (int)90,          // LeftY_max
-                 (int)300,         // LeftZ_min
-                 (int)500,         // LeftZ_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)MAXCOORD,    // RightX_max
-                 (int)110,         // RightY_min
-                 (int)-40,         // RightY_max
-                 (int)-MAXCOORD,   // RightZ_min
-                 (int)MAXCOORD);   // RightZ_max
-    out.push_back(point_trf);
-
-    Gesture point_rf(GESTURE_POINTING_RF,
-                 (int)60,          // LeftX_min
-                 (int)120,         // LeftX_max
-                 (int)-30,         // LeftY_min
-                 (int)30,          // LeftY_max
-                 (int)230,         // LeftZ_min
-                 (int)670,         // LeftZ_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)MAXCOORD,    // RightX_max
-                 (int)110,         // RightY_min
-                 (int)-40,         // RightY_max
-                 (int)-MAXCOORD,   // RightZ_min
-                 (int)MAXCOORD);   // RightZ_max
-    out.push_back(point_rf);
-
-    Gesture point_tlf(GESTURE_POINTING_TLF,
-                 (int)-MAXCOORD,   // LeftX_min
-                 (int)MAXCOORD,    // LeftX_max
-                 (int)90,          // LeftY_min
-                 (int)-50,         // LeftY_max
-                 (int)-MAXCOORD,   // LeftZ_min
-                 (int)MAXCOORD,    // LeftZ_max
-                 (int)-100,        // RightX_min
-                 (int)-50,         // RightX_max
-                 (int)40,          // RightY_min
-                 (int)80,          // RightY_max
-                 (int)180,         // RightZ_min
-                 (int)420);        // RightZ_max
-    out.push_back(point_tlf);
-
-    Gesture point_lf(GESTURE_POINTING_LF,
-                 (int)-MAXCOORD,   // LeftX_min
-                 (int)MAXCOORD,    // LeftX_max
-                 (int)90,          // LeftY_min
-                 (int)-50,         // LeftY_max
-                 (int)-MAXCOORD,   // LeftZ_min
-                 (int)MAXCOORD,    // LeftZ_max
-                 (int)-120,        // RightX_min
-                 (int)-60,         // RightX_max
-                 (int)-20,         // RightY_min
-                 (int)30,          // RightY_max
-                 (int)70,          // RightZ_min
-                 (int)550);        // RightZ_max
-    out.push_back(point_lf);
-
-
-    Gesture point_tr(GESTURE_POINTING_TR,
-                 (int)50,          // LeftX_min
-                 (int)100,         // LeftX_max
-                 (int)30,          // LeftY_min
-                 (int)80,          // LeftY_max
-                 (int)-140,        // LeftZ_min
-                 (int)20,          // LeftZ_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)MAXCOORD,    // RightX_max
-                 (int)110,         // RightY_min
-                 (int)-40,         // RightY_max
-                 (int)-MAXCOORD,   // RightZ_min
-                 (int)MAXCOORD);   // RightZ_max
-    out.push_back(point_tr);
-
-    Gesture point_r(GESTURE_POINTING_R,
-                 (int)80,          // LeftX_min
-                 (int)110,         // LeftX_max
-                 (int)-20,         // LeftY_min
-                 (int)20,          // LeftY_max
-                 (int)-200,        // LeftZ_min
-                 (int)20,          // LeftZ_max
-                 (int)-MAXCOORD,   // RightX_min
-                 (int)MAXCOORD,    // RightX_max
-                 (int)110,         // RightY_min
-                 (int)-40,         // RightY_max
-                 (int)-MAXCOORD,   // RightZ_min
-                 (int)MAXCOORD);   // RightZ_max
-    out.push_back(point_r);
-
-    Gesture point_tl(GESTURE_POINTING_TL,
-                 (int)-MAXCOORD,   // LeftX_min
-                 (int)MAXCOORD,    // LeftX_max
-                 (int)90,          // LeftY_min
-                 (int)-50,         // LeftY_max
-                 (int)-MAXCOORD,   // LeftZ_min
-                 (int)MAXCOORD,    // LeftZ_max
-                 (int)-80,         // RightX_min
-                 (int)-50,         // RightX_max
-                 (int)40,          // RightY_min
-                 (int)80,          // RightY_max
-                 (int)-120,        // RightZ_min
-                 (int)110);        // RightZ_max
-    out.push_back(point_tl);
-
-    Gesture point_l(GESTURE_POINTING_L,
-                 (int)-MAXCOORD,   // LeftX_min
-                 (int)MAXCOORD,    // LeftX_max
-                 (int)90,          // LeftY_min
-                 (int)-50,         // LeftY_max
-                 (int)-MAXCOORD,   // LeftZ_min
-                 (int)MAXCOORD,    // LeftZ_max
-                 (int)-100,        // RightX_min
-                 (int)-70,         // RightX_max
-                 (int)-10,         // RightY_min
-                 (int)20,          // RightY_max
-                 (int)-90,         // RightZ_min
-                 (int)110);        // RightZ_max
-    out.push_back(point_l);
-
-    Gesture victory(GESTURE_VICTORY,
-                 (int)45,          // LeftX_min
-                 (int)100,         // LeftX_max
-                 (int)45,          // LeftY_min
-                 (int)90,          // LeftY_max
-                 (int)-80,         // RightX_min
-                 (int)-30,         // RightX_max
-                 (int)50,          // RightY_min
-                 (int)100);        // RightY_max
-    out.push_back(victory);
-
-    Gesture flexing(GESTURE_FLEXING,
-                 (int)0,           // LeftX_min
-                 (int)70,          // LeftX_max
-                 (int)0,           // LeftY_min
-                 (int)50,          // LeftY_max
-                 (int)-50,         // RightX_min
-                 (int)0,           // RightX_max
-                 (int)20,          // RightY_min
-                 (int)50);         // RightY_max
-    out.push_back(flexing);
-
-    return out;
-}
-
-vector<DynamicGesture> defineDynamicGestures(void)
-{
-    vector<DynamicGesture> out;
-
-    DynamicGesture waving_r(GESTURE_WAVING_R);
-
-    Gesture waving_r_int_0(GESTURE_WAVING_R,
-                 (int)40,           // LeftX_min
-                 (int)90,          // LeftX_max
-                 (int)-20,           // LeftY_min
-                 (int)40,          // LeftY_max
-                 (int)0,         // RightX_min
-                 (int)-50,           // RightX_max
-                 (int)50,          // RightY_min
-                 (int)20);         // RightY_max
-    waving_r.addIntermediateGesture(waving_r_int_0);
-
-    Gesture waving_r_int_1(GESTURE_WAVING_R,
-                 (int)-20,           // LeftX_min
-                 (int)40,          // LeftX_max
-                 (int)-20,           // LeftY_min
-                 (int)40,          // LeftY_max
-                 (int)0,         // RightX_min
-                 (int)-50,           // RightX_max
-                 (int)50,          // RightY_min
-                 (int)20);         // RightY_max
-    waving_r.addIntermediateGesture(waving_r_int_1);
-
-    Gesture waving_r_int_2(GESTURE_WAVING_R,
-                 (int)40,           // LeftX_min
-                 (int)90,          // LeftX_max
-                 (int)-20,           // LeftY_min
-                 (int)40,          // LeftY_max
-                 (int)0,         // RightX_min
-                 (int)-50,           // RightX_max
-                 (int)50,          // RightY_min
-                 (int)20);         // RightY_max
-    waving_r.addIntermediateGesture(waving_r_int_2);
-
-    Gesture waving_r_int_3(GESTURE_WAVING_R,
-                 (int)-20,           // LeftX_min
-                 (int)40,          // LeftX_max
-                 (int)-20,           // LeftY_min
-                 (int)40,          // LeftY_max
-                 (int)0,         // RightX_min
-                 (int)-50,           // RightX_max
-                 (int)50,          // RightY_min
-                 (int)20);         // RightY_max
-    waving_r.addIntermediateGesture(waving_r_int_3);
-
-    out.push_back(waving_r);
-
-    return out;
-}
-

@@ -27,6 +27,8 @@ set(SOURCES
     main.cpp
     gesture.cpp
     dynamicgesture.cpp
+    analytics.cpp
+    gesturedefinitions.cpp
 )
 
 include_directories(
